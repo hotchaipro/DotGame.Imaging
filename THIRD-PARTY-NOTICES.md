@@ -80,8 +80,8 @@ freely, subject to the following restrictions:
 
 - Source: https://github.com/webmproject/libwebp, tag `v1.6.0`
 - License: BSD 3-clause, with Google's additional patent grant (below)
-- Ported in: the WebP decoder (`DotGame.Imaging.WebP`; in the source, `src/WebP/`, where each
-  file's header names the libwebp files it follows)
+- Ported in: the WebP decoder and encoder (`DotGame.Imaging.WebP`; in the source, `src/WebP/`, where
+  each file's header names the libwebp files it follows)
 
 The BSD 3-clause license:
 

@@ -147,7 +147,7 @@ internal static class PngEncoder
                     uint pixel = pixels[i];
                     if (unpremultiply)
                     {
-                        pixel = Unpremultiply(pixel);
+                        pixel = Premultiply.UndoPixel(pixel);
                     }
 
                     Unsafe.WriteUnaligned(ref Unsafe.Add(ref target, i * 4), pixel);
@@ -174,7 +174,7 @@ internal static class PngEncoder
                     uint pixel = pixels[i];
                     if (unpremultiply)
                     {
-                        pixel = Unpremultiply(pixel);
+                        pixel = Premultiply.UndoPixel(pixel);
                     }
 
                     ref byte p = ref Unsafe.Add(ref target, i * 2);
@@ -192,24 +192,6 @@ internal static class PngEncoder
 
                 break;
         }
-    }
-
-    // Divides a premultiplied color by its alpha, rounding to the nearest
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static uint Unpremultiply(
-        uint pixel)
-    {
-        uint a = pixel >> 24;
-        if ((a == 0) || (a == 255))
-        {
-            return pixel;
-        }
-
-        uint half = a / 2;
-        uint r = Math.Min(255, (((pixel & 0xff) * 255) + half) / a);
-        uint g = Math.Min(255, ((((pixel >> 8) & 0xff) * 255) + half) / a);
-        uint b = Math.Min(255, ((((pixel >> 16) & 0xff) * 255) + half) / a);
-        return r | (g << 8) | (b << 16) | (a << 24);
     }
 
     // Unfiltered rows compress best for flat-colored art (repeats that filtering would break up),

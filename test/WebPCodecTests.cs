@@ -1,9 +1,11 @@
 // Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.Security.Cryptography;
+using DotGame.Imaging.Png;
 using DotGame.Imaging.WebP;
 
 namespace DotGame.Imaging.Tests;
@@ -11,8 +13,10 @@ namespace DotGame.Imaging.Tests;
 /// <summary>
 /// The WebP decoder against libwebp 1.6.0's pixels (WebPDecodeRGBA's defaults: fancy upsampling,
 /// straight alpha): small images made by its cwebp, lossy, lossless and lossy with alpha, each with the
-/// SHA-256 of libwebp's RGBA. The decoder was checked against libwebp on 2,403 images, every one
-/// the same.
+/// SHA-256 of libwebp's RGBA. And the encoder against cwebp 1.6.0's files: one image encoded with
+/// cwebp's settings, each with the SHA-256 of cwebp's file. The decoder was checked against libwebp on
+/// 2,403 images, and the encoders against cwebp on 495 images (lossless) and 374 (lossy) in some 80
+/// combinations of settings, every one the same.
 /// </summary>
 public sealed class WebPCodecTests
 {
@@ -30,6 +34,17 @@ public sealed class WebPCodecTests
         { "LossyAlphaFlat17x9", 17, 9, "fea95ee6654315a11e31ce972ff371fc74f2ad8dc02dd7439dafe6ceff383e9a" },
         { "LossyAlpha37x21", 37, 21, "9cd584efe29dd1ca716b5d07b00ba8c4cee0c7c7283b9bfea20d4c58cc0f5470" },
         { "LossyAlpha130x67", 130, 67, "1179102e716af7d87c5de973bf8eff9d7b3779bc1704afafcca4b05eefdf3fd7" },
+    };
+
+    // The encoder's settings for EncodeSource.png, each with the SHA-256 of cwebp 1.6.0's file
+    public static readonly TheoryData<string, string> EncoderSettings = new()
+    {
+        { "Lossless", "819576867e33a2dc41b3b105686405263beeee6a6b60a7f7e9e21c9357fba36f" },
+        { "Lossy", "e33adba8d929df1fa921b3980053c7d22f9b43c34c1aadfdc7735a07373fffce" },
+        { "Defaults", "5c8d627253c6f0a6fc4f940179b4348a4e0de7a0471f976ce7fff0cefa76079c" },
+        { "LossyFast", "48b3e29bbddf410621c3fd5c7ecf06a0ae735499a2d916ba1a5c74fb09b52c0a" },
+        { "NearLossless", "29eb3ef748e7ffeaa736020a3d65db3c10b8164993afeedd4bcedb9b1b4af958" },
+        { "LosslessThreads", "819576867e33a2dc41b3b105686405263beeee6a6b60a7f7e9e21c9357fba36f" },
     };
 
     [Fact]
@@ -140,6 +155,79 @@ public sealed class WebPCodecTests
         Assert.Throws<InvalidDataException>(() => WebPCodec.Decode(data.AsSpan(0, data.Length - 40), new byte[byteCount], PixelLayout.Rgba32, false));
     }
 
+    [Theory]
+    [MemberData(nameof(EncoderSettings))]
+    public void Encode_WritesCwebpsFile(
+        string name,
+        string sha256)
+    {
+        byte[] pixels = EncodeSource(out int width, out int height, premultiplyAlpha: false);
+        var writer = new ArrayBufferWriter<byte>();
+
+        WebPCodec.Encode(writer, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false, EncoderOptions(name));
+
+        Assert.Equal(sha256, Convert.ToHexStringLower(SHA256.HashData(writer.WrittenSpan)));
+    }
+
+    [Fact]
+    public void Encode_LosslessGivesThePixelsBack()
+    {
+        byte[] pixels = EncodeSource(out int width, out int height, premultiplyAlpha: false);
+        var writer = new ArrayBufferWriter<byte>();
+        WebPCodec.Encode(writer, width, height, pixels, PixelLayout.Rgba32, false, new WebPEncoderOptions { Lossless = true, Exact = true });
+
+        var decoded = new byte[pixels.Length];
+        WebPCodec.Decode(writer.WrittenSpan, decoded, PixelLayout.Rgba32, premultiplyAlpha: false);
+
+        Assert.Equal(pixels, decoded);
+    }
+
+    [Fact]
+    public void Encode_UnpremultipliesAsPngDoes()
+    {
+        byte[] premultiplied = EncodeSource(out int width, out int height, premultiplyAlpha: true);
+        var webp = new ArrayBufferWriter<byte>();
+        WebPCodec.Encode(webp, width, height, premultiplied, PixelLayout.Rgba32, unpremultiplyAlpha: true, new WebPEncoderOptions { Lossless = true, Exact = true });
+        var png = new ArrayBufferWriter<byte>();
+        PngCodec.Encode(png, width, height, premultiplied, PixelLayout.Rgba32, unpremultiplyAlpha: true, PngCompressionLevel.Fastest);
+
+        var fromWebP = new byte[premultiplied.Length];
+        WebPCodec.Decode(webp.WrittenSpan, fromWebP, PixelLayout.Rgba32, premultiplyAlpha: false);
+        var fromPng = new byte[premultiplied.Length];
+        PngCodec.Decode(png.WrittenSpan, fromPng, PixelLayout.Rgba32, premultiplyAlpha: false);
+
+        Assert.Equal(fromPng, fromWebP);
+    }
+
+    [Fact]
+    public void Encode_WithNoOptionsUsesCwebpsDefaults()
+    {
+        byte[] pixels = EncodeSource(out int width, out int height, premultiplyAlpha: false);
+        var withDefaults = new ArrayBufferWriter<byte>();
+        var withNone = new ArrayBufferWriter<byte>();
+
+        WebPCodec.Encode(withDefaults, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false, new WebPEncoderOptions());
+        WebPCodec.Encode(withNone, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false);
+
+        Assert.Equal(withDefaults.WrittenSpan.ToArray(), withNone.WrittenSpan.ToArray());
+    }
+
+    [Fact]
+    public void Encode_RejectsWhatIsntAnImage()
+    {
+        var writer = new ArrayBufferWriter<byte>();
+        var options = new WebPEncoderOptions();
+
+        Assert.Throws<ArgumentNullException>(() => WebPCodec.Encode(null!, 1, 1, new byte[4], PixelLayout.Rgba32, false, options));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WebPCodec.Encode(writer, 0, 1, [], PixelLayout.Rgba32, false, options));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WebPCodec.Encode(writer, 16384, 1, new byte[16384 * 4], PixelLayout.Rgba32, false, options));
+        Assert.Throws<ArgumentException>(() => WebPCodec.Encode(writer, 2, 2, new byte[15], PixelLayout.Rgba32, false, options));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WebPCodec.Encode(writer, 1, 1, new byte[4], PixelLayout.Rgba32, false, new WebPEncoderOptions { Quality = 101 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WebPCodec.Encode(writer, 1, 1, new byte[4], PixelLayout.Rgba32, false, new WebPEncoderOptions { Method = 7 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WebPCodec.Encode(writer, 1, 1, new byte[4], PixelLayout.Rgba32, false, new WebPEncoderOptions { Quality = float.NaN }));
+        Assert.Equal(0, writer.WrittenCount);
+    }
+
     // An image's compressed data, past its headers: a lossy image's token partitions (after the frame
     // header and the first partition, whose size the frame tag gives), or a lossless image's
     // bitstream after its 5-byte header
@@ -166,5 +254,33 @@ public sealed class WebPCodecTests
         }
 
         throw new InvalidDataException("No image chunk.");
+    }
+
+    // EncodeSource.png: 96 x 64, with gradients, noise, every kind of alpha and colors under transparent pixels
+    private static byte[] EncodeSource(
+        out int width,
+        out int height,
+        bool premultiplyAlpha)
+    {
+        byte[] png = TestImages.Read("WebP/EncodeSource.png");
+        Assert.True(PngCodec.TryGetDecodedSize(png, PixelLayout.Rgba32, out width, out height, out int byteCount));
+        var pixels = new byte[byteCount];
+        PngCodec.Decode(png, pixels, PixelLayout.Rgba32, premultiplyAlpha);
+        return pixels;
+    }
+
+    private static WebPEncoderOptions EncoderOptions(
+        string name)
+    {
+        return name switch
+        {
+            "Lossless" => new WebPEncoderOptions { Lossless = true, Method = 6, Quality = 100, Exact = true },
+            "Lossy" => new WebPEncoderOptions { Quality = 80, Method = 6, Exact = true },
+            "Defaults" => new WebPEncoderOptions(),
+            "LossyFast" => new WebPEncoderOptions { Quality = 50, Method = 0, AlphaQuality = 50, UseSharpYuv = true },
+            "NearLossless" => new WebPEncoderOptions { Lossless = true, NearLossless = 60, Method = 3 },
+            "LosslessThreads" => new WebPEncoderOptions { Lossless = true, Method = 6, Quality = 100, Exact = true, UseThreads = true },
+            _ => throw new ArgumentException(name),
+        };
     }
 }
