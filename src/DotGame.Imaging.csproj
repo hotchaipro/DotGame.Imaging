@@ -33,4 +33,14 @@
     <InternalsVisibleTo Include="DotGame.Imaging.Tests" />
   </ItemGroup>
 
+  <!--
+    The public API baseline: PublicAPI.Shipped.txt lists what released packages have, and
+    PublicAPI.Unshipped.txt what's changed since. A public API that isn't in them, or is in them but
+    gone, fails the build (RS0016, RS0017), so every change to the API is a change to these files too.
+    At a release, move Unshipped's lines into Shipped.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>

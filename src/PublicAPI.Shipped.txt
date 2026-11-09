@@ -1,0 +1,57 @@
+#nullable enable
+DotGame.Imaging.ImageDecoder
+DotGame.Imaging.Jpeg.JpegCodec
+DotGame.Imaging.Jpeg.JpegEncoderOptions
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Grayscale.get -> bool
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Grayscale.init -> void
+DotGame.Imaging.Jpeg.JpegEncoderOptions.JpegEncoderOptions() -> void
+DotGame.Imaging.Jpeg.JpegEncoderOptions.OptimizeHuffman.get -> bool
+DotGame.Imaging.Jpeg.JpegEncoderOptions.OptimizeHuffman.init -> void
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Progressive.get -> bool
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Progressive.init -> void
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Quality.get -> int
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Quality.init -> void
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Subsampling.get -> DotGame.Imaging.Jpeg.JpegSubsampling
+DotGame.Imaging.Jpeg.JpegEncoderOptions.Subsampling.init -> void
+DotGame.Imaging.Jpeg.JpegSubsampling
+DotGame.Imaging.Jpeg.JpegSubsampling.YCbCr420 = 0 -> DotGame.Imaging.Jpeg.JpegSubsampling
+DotGame.Imaging.Jpeg.JpegSubsampling.YCbCr422 = 1 -> DotGame.Imaging.Jpeg.JpegSubsampling
+DotGame.Imaging.Jpeg.JpegSubsampling.YCbCr444 = 2 -> DotGame.Imaging.Jpeg.JpegSubsampling
+DotGame.Imaging.PixelLayout
+DotGame.Imaging.PixelLayout.Rgba32 = 0 -> DotGame.Imaging.PixelLayout
+DotGame.Imaging.Png.PngCodec
+DotGame.Imaging.Png.PngCompressionLevel
+DotGame.Imaging.Png.PngCompressionLevel.Fastest = 1 -> DotGame.Imaging.Png.PngCompressionLevel
+DotGame.Imaging.Png.PngCompressionLevel.NoCompression = 2 -> DotGame.Imaging.Png.PngCompressionLevel
+DotGame.Imaging.Png.PngCompressionLevel.Optimal = 0 -> DotGame.Imaging.Png.PngCompressionLevel
+DotGame.Imaging.Png.PngCompressionLevel.SmallestSize = 3 -> DotGame.Imaging.Png.PngCompressionLevel
+DotGame.Imaging.WebP.WebPCodec
+DotGame.Imaging.WebP.WebPEncoderOptions
+DotGame.Imaging.WebP.WebPEncoderOptions.AlphaQuality.get -> int
+DotGame.Imaging.WebP.WebPEncoderOptions.AlphaQuality.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.Exact.get -> bool
+DotGame.Imaging.WebP.WebPEncoderOptions.Exact.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.Lossless.get -> bool
+DotGame.Imaging.WebP.WebPEncoderOptions.Lossless.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.Method.get -> int
+DotGame.Imaging.WebP.WebPEncoderOptions.Method.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.NearLossless.get -> int
+DotGame.Imaging.WebP.WebPEncoderOptions.NearLossless.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.Quality.get -> float
+DotGame.Imaging.WebP.WebPEncoderOptions.Quality.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.UseSharpYuv.get -> bool
+DotGame.Imaging.WebP.WebPEncoderOptions.UseSharpYuv.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.UseThreads.get -> bool
+DotGame.Imaging.WebP.WebPEncoderOptions.UseThreads.init -> void
+DotGame.Imaging.WebP.WebPEncoderOptions.WebPEncoderOptions() -> void
+static DotGame.Imaging.ImageDecoder.Decode(System.ReadOnlySpan<byte> data, System.Span<byte> pixels, DotGame.Imaging.PixelLayout layout, bool premultiplyAlpha) -> void
+static DotGame.Imaging.ImageDecoder.TryGetDecodedSize(System.ReadOnlySpan<byte> data, DotGame.Imaging.PixelLayout layout, out int width, out int height, out int byteCount) -> bool
+static DotGame.Imaging.Jpeg.JpegCodec.Decode(System.ReadOnlySpan<byte> jpeg, System.Span<byte> pixels, DotGame.Imaging.PixelLayout layout) -> void
+static DotGame.Imaging.Jpeg.JpegCodec.Encode(System.Buffers.IBufferWriter<byte>! writer, int width, int height, System.ReadOnlySpan<byte> pixels, DotGame.Imaging.PixelLayout layout, bool unpremultiplyAlpha, DotGame.Imaging.Jpeg.JpegEncoderOptions? options = null) -> void
+static DotGame.Imaging.Jpeg.JpegCodec.TryGetDecodedSize(System.ReadOnlySpan<byte> jpeg, DotGame.Imaging.PixelLayout layout, out int width, out int height, out int byteCount) -> bool
+static DotGame.Imaging.Png.PngCodec.Decode(System.ReadOnlySpan<byte> png, System.Span<byte> pixels, DotGame.Imaging.PixelLayout layout, bool premultiplyAlpha) -> void
+static DotGame.Imaging.Png.PngCodec.Encode(System.Buffers.IBufferWriter<byte>! writer, int width, int height, System.ReadOnlySpan<byte> pixels, DotGame.Imaging.PixelLayout layout, bool unpremultiplyAlpha, DotGame.Imaging.Png.PngCompressionLevel compressionLevel = DotGame.Imaging.Png.PngCompressionLevel.Optimal) -> void
+static DotGame.Imaging.Png.PngCodec.TryGetDecodedSize(System.ReadOnlySpan<byte> png, DotGame.Imaging.PixelLayout layout, out int width, out int height, out int byteCount) -> bool
+static DotGame.Imaging.WebP.WebPCodec.Decode(System.ReadOnlySpan<byte> webp, System.Span<byte> pixels, DotGame.Imaging.PixelLayout layout, bool premultiplyAlpha) -> void
+static DotGame.Imaging.WebP.WebPCodec.Encode(System.Buffers.IBufferWriter<byte>! writer, int width, int height, System.ReadOnlySpan<byte> pixels, DotGame.Imaging.PixelLayout layout, bool unpremultiplyAlpha, DotGame.Imaging.WebP.WebPEncoderOptions? options = null) -> void
+static DotGame.Imaging.WebP.WebPCodec.TryGetDecodedSize(System.ReadOnlySpan<byte> webp, DotGame.Imaging.PixelLayout layout, out int width, out int height, out int byteCount) -> bool

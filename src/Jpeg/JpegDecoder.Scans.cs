@@ -100,12 +100,14 @@ internal static partial class JpegDecoder
 
             foreach (var c in scan)
             {
-                if ((this.progressive ? spectralStart == 0 : true) && (this.dcTables[c.DcTable] is null) && (successiveHigh == 0))
+                // A table number is 0 to 15 in the file, but there are four tables: libjpeg rejects
+                // another when the scan would use it
+                if ((this.progressive ? spectralStart == 0 : true) && (successiveHigh == 0) && ((c.DcTable >= this.dcTables.Length) || (this.dcTables[c.DcTable] is null)))
                 {
                     throw new InvalidDataException("A JPEG scan's DC Huffman table is missing.");
                 }
 
-                if ((spectralEnd > 0) && (this.acTables[c.AcTable] is null))
+                if ((spectralEnd > 0) && ((c.AcTable >= this.acTables.Length) || (this.acTables[c.AcTable] is null)))
                 {
                     throw new InvalidDataException("A JPEG scan's AC Huffman table is missing.");
                 }

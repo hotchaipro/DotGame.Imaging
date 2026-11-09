@@ -73,6 +73,14 @@ internal static partial class JpegDecoder
             {
                 int count = counts[length - 1];
                 this.ValueOffset[length] = k - code;
+
+                // The codes of each length must fit in its bits, and none may be all ones (libjpeg's
+                // check, made before the codes fill the lookup, which they'd overrun)
+                if (code + count >= (1 << length))
+                {
+                    throw new InvalidDataException("A JPEG Huffman table is malformed.");
+                }
+
                 if (count > 0)
                 {
                     for (int i = 0; i < count; i++, k++, code++)
@@ -93,11 +101,6 @@ internal static partial class JpegDecoder
                 else
                 {
                     this.MaxCode[length] = -1;
-                }
-
-                if (code > (1 << length))
-                {
-                    throw new InvalidDataException("A JPEG Huffman table is malformed.");
                 }
 
                 code <<= 1;

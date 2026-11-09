@@ -25,8 +25,13 @@ A few things the library holds to:
   the WebP decoder and encoder give libwebp 1.6.0's pixels and cwebp 1.6.0's files, bit for bit. A change
   to them keeps that, and says how it was checked.
 - **No dependencies, and trim and AOT safe.** The library references nothing beyond .NET.
-- **Each fix comes with a test** that fails without it. Test images go in `test/Images/<format>/`.
-- **Public API changes are discussed first,** in an issue, before a pull request.
+- **Each fix comes with a test** that fails without it. Test images go in `test/Images/<format>/`, and
+  damaged images that once broke a decoder in `test/Images/Fuzz/<format>/`.
+- **Public API changes are discussed first,** in an issue, before a pull request. `src/PublicAPI.Shipped.txt`
+  and `src/PublicAPI.Unshipped.txt` list the public API, and the build fails until a change to it is in
+  `Unshipped`: the analyzer's code fix (or `dotnet format analyzers --diagnostics RS0016`) adds it.
+- **The decoders take untrusted files.** A change to one is fuzzed with `fuzz/` (see its README)
+  before it ships.
 
 Open a pull request against `main`. By contributing, you agree that your contribution is licensed under
 the MIT License, as the rest of the library is (`LICENSE`).

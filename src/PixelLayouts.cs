@@ -33,8 +33,11 @@ internal static class PixelLayouts
         int bytesPerPixel,
         out int byteCount)
     {
-        long count = (long)width * height * bytesPerPixel;
-        if ((width <= 0) || (height <= 0) || (count > int.MaxValue))
+        // width x height fits in a long, but times the bytes per pixel it can overflow (a PNG image's
+        // sides go to 2^31 - 1), so the pixel count is checked first
+        long pixelCount = (long)width * height;
+        long count = pixelCount * bytesPerPixel;
+        if ((width <= 0) || (height <= 0) || (pixelCount > (int.MaxValue / bytesPerPixel)) || (count > int.MaxValue))
         {
             byteCount = 0;
             return false;
