@@ -2,8 +2,9 @@
 //
 // Part of the JPEG decoder (JpegDecoder.cs). The decoder's port notes and notices:
 //
-// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, the whole image decoded
-// at once and output a row at a time, and the Huffman decoding, vector forms and buffer handling new.
+// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, a progressive or
+// multiscan image decoded whole before it's output, and the Huffman decoding, vector forms and buffer
+// handling new.
 //
 // The inverse DCT's arithmetic, the upsampling, the color conversion, the range limiting, the AC
 // refinement, the color space guess, the block smoothing rule and the context rows follow jidctint.c,
@@ -59,7 +60,8 @@ internal static partial class JpegDecoder
         // Reads a scan's header and its entropy-coded data; returns the position of the next marker
         private int ReadScan(
             ReadOnlySpan<byte> header,
-            int dataStart)
+            int dataStart,
+            Span<byte> pixels)
         {
             int count = (header.Length >= 1) ? header[0] : 0;
             if ((count < 1) || (count > 4) || (header.Length < 4 + (2 * count)))
@@ -119,9 +121,23 @@ internal static partial class JpegDecoder
             this.reader.Reset(dataStart);
             int restartsLeft = this.restartInterval;
             int totalMcus = (count == 1) ? scan[0].WidthInBlocks * scan[0].HeightInBlocks : this.mcusPerLine * this.mcusPerColumn;
-            if (!this.progressive)
+            if (this.components[0].Plane.Length == 0)
             {
-                this.DecodeBaselineScan(scan);
+                // At the first scan: a sequential image whose one scan has every component is decoded
+                // and output a few rows at a time, as libjpeg does, in rings of three MCU rows (the
+                // last decoded, and the two before it for the upsampling's context rows); any other
+                // image is decoded whole first
+                this.AllocatePlanes(stream: !this.progressive && (count == this.components.Length));
+            }
+
+            if (this.streamed)
+            {
+                // A sequential image's one scan had every component: libjpeg outputs it and reads no
+                // more scans
+            }
+            else if (!this.progressive)
+            {
+                this.DecodeBaselineScan(scan, pixels);
             }
             else
             {
@@ -182,7 +198,8 @@ internal static partial class JpegDecoder
         // IDCT into its component's plane
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void DecodeBaselineScan(
-            Component[] scan)
+            Component[] scan,
+            Span<byte> pixels)
         {
             ulong bits = 0;
             int count = 0;
@@ -196,6 +213,12 @@ internal static partial class JpegDecoder
             int columns = single ? scan[0].WidthInBlocks : this.mcusPerLine;
             for (int mcuRow = 0; mcuRow < rows; mcuRow++)
             {
+                if (this.streaming)
+                {
+                    // The rows the MCU rows so far have every sample of, context rows included
+                    this.OutputRows(pixels, this.StreamedRows(mcuRow));
+                }
+
                 for (int mcuColumn = 0; mcuColumn < columns; mcuColumn++)
                 {
                     if (this.restartInterval > 0)
@@ -218,7 +241,7 @@ internal static partial class JpegDecoder
                     {
                         var c = scan[0];
                         DecodeBaselineBlock(ref bits, ref count, ref position, ref atMarker, this.data, this.dcTables[c.DcTable]!, this.acTables[c.AcTable]!, ref c.DcPredictor, block);
-                        Idct.Islow(block, c.Quant!, c.Plane.AsSpan((mcuRow * 8 * c.Stride) + (mcuColumn * 8)), c.Stride);
+                        Idct.Islow(block, c.Quant!, c.Plane.AsSpan(c.RowOffset(mcuRow * 8) + (mcuColumn * 8)), c.Stride);
                         block.Clear();
                         continue;
                     }
@@ -233,7 +256,7 @@ internal static partial class JpegDecoder
                             for (int h = 0; h < c.H; h++)
                             {
                                 DecodeBaselineBlock(ref bits, ref count, ref position, ref atMarker, this.data, dc, ac, ref c.DcPredictor, block);
-                                Idct.Islow(block, c.Quant!, c.Plane.AsSpan((row * 8 * c.Stride) + (((mcuColumn * c.H) + h) * 8)), c.Stride);
+                                Idct.Islow(block, c.Quant!, c.Plane.AsSpan(c.RowOffset(row * 8) + (((mcuColumn * c.H) + h) * 8)), c.Stride);
                                 block.Clear();
                             }
                         }
@@ -242,6 +265,11 @@ internal static partial class JpegDecoder
             }
 
             this.reader.Position = position;
+            if (this.streaming)
+            {
+                this.streamed = true;
+                this.OutputRows(pixels, this.height);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

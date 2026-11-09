@@ -2,8 +2,9 @@
 //
 // Part of the JPEG decoder (JpegDecoder.cs). The decoder's port notes and notices:
 //
-// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, the whole image decoded
-// at once and output a row at a time, and the Huffman decoding, vector forms and buffer handling new.
+// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, a progressive or
+// multiscan image decoded whole before it's output, and the Huffman decoding, vector forms and buffer
+// handling new.
 //
 // The inverse DCT's arithmetic, the upsampling, the color conversion, the range limiting, the AC
 // refinement, the color space guess, the block smoothing rule and the context rows follow jidctint.c,
@@ -75,6 +76,11 @@ internal static partial class JpegDecoder
         private bool sawAdobe;
         private int adobeTransform;
         private int eobRun;
+        private bool streaming;         // the planes are rings, and rows are output as the scan goes
+        private bool streamed;          // that scan is done
+        private int rowsOut;            // the rows output so far
+        private byte[][]? rowBuffers;   // each component's upsampled row
+        private bool rgb;
 
         public Decoding(
             byte[] data,
@@ -87,7 +93,8 @@ internal static partial class JpegDecoder
             this.reader = new BitReader(data);
         }
 
-        public void Run()
+        public void Run(
+            Span<byte> pixels)
         {
             int position = 2;
             bool frame = false;
@@ -186,7 +193,7 @@ internal static partial class JpegDecoder
                             throw new InvalidDataException("The JPEG image has a scan before its frame.");
                         }
 
-                        position = this.ReadScan(segment, position + length);
+                        position = this.ReadScan(segment, position + length, pixels);
                         continue;
 
                     case 0xE0:
@@ -301,7 +308,6 @@ internal static partial class JpegDecoder
                 c.BlocksPerLine = this.mcusPerLine * c.H;
                 c.BlocksPerColumn = this.mcusPerColumn * c.V;
                 c.Stride = c.BlocksPerLine * 8;
-                c.Plane = GC.AllocateUninitializedArray<byte>(c.Stride * c.BlocksPerColumn * 8);
                 if (isProgressive)
                 {
                     c.Coefficients = new short[c.BlocksPerLine * c.BlocksPerColumn * 64];
@@ -398,16 +404,67 @@ internal static partial class JpegDecoder
                 }
             }
 
-            // A row at a time: each component's row at full size (upsampled into a buffer, or its
-            // plane's own row), then to RGBA
-            var buffers = new byte[this.components.Length][];
-            for (int i = 0; i < buffers.Length; i++)
+            this.OutputRows(rgba, this.height);
+        }
+
+        // Each component's plane: every row, or for a streamed image a ring of three MCU rows
+        private void AllocatePlanes(
+            bool stream)
+        {
+            this.streaming = stream;
+            foreach (var c in this.components)
             {
-                buffers[i] = new byte[(this.components[i].DownsampledWidth * 4) + 16];
+                int rows = c.BlocksPerColumn * 8;
+                c.RingRows = 0;
+                if (stream)
+                {
+                    int ring = 3 * 8 * ((this.components.Length == 1) ? 1 : c.V);
+                    if (ring < rows)
+                    {
+                        c.RingRows = ring;
+                        rows = ring;
+                    }
+                }
+
+                c.Plane = GC.AllocateUninitializedArray<byte>(c.Stride * rows);
+            }
+        }
+
+        // A streamed image's rows that can be output before MCU row mcuRow is decoded: those whose
+        // samples, and the rows above and below them the upsampling reads, every component has
+        private int StreamedRows(
+            int mcuRow)
+        {
+            int rows = this.height;
+            foreach (var c in this.components)
+            {
+                int decoded = mcuRow * 8 * ((this.components.Length == 1) ? 1 : c.V);
+                rows = Math.Min(rows, Math.Max(0, ((decoded - 1) * this.maxV) / c.V));
             }
 
-            bool rgb = (this.components.Length == 3) && this.IsRgb();
-            for (int y = 0; y < this.height; y++)
+            return rows;
+        }
+
+        // Output's rows from the last output up to (not including) row end: each component's row at
+        // full size (upsampled into a buffer, or its plane's own row), then to RGBA
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private void OutputRows(
+            Span<byte> rgba,
+            int end)
+        {
+            if (this.rowBuffers is null)
+            {
+                this.rowBuffers = new byte[this.components.Length][];
+                for (int i = 0; i < this.rowBuffers.Length; i++)
+                {
+                    this.rowBuffers[i] = new byte[(this.components[i].DownsampledWidth * 4) + 16];
+                }
+
+                this.rgb = (this.components.Length == 3) && this.IsRgb();
+            }
+
+            var buffers = this.rowBuffers;
+            for (int y = this.rowsOut; y < end; y++)
             {
                 var output = rgba.Slice(y * this.width * 4, this.width * 4);
                 var first = Upsampling.Row(this.components[0], y, this.width, this.maxH, this.maxV, buffers[0]);
@@ -419,7 +476,7 @@ internal static partial class JpegDecoder
 
                 var second = Upsampling.Row(this.components[1], y, this.width, this.maxH, this.maxV, buffers[1]);
                 var third = Upsampling.Row(this.components[2], y, this.width, this.maxH, this.maxV, buffers[2]);
-                if (rgb)
+                if (this.rgb)
                 {
                     ColorConversion.Rgb(first, second, third, output);
                 }
@@ -428,6 +485,8 @@ internal static partial class JpegDecoder
                     ColorConversion.YccRgb(first, second, third, output);
                 }
             }
+
+            this.rowsOut = Math.Max(this.rowsOut, end);
         }
 
         // libjpeg's guess of a three-component image's color space (jdapimin.c)

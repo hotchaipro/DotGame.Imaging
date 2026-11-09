@@ -105,8 +105,8 @@ JPEG decode:
 
 | Image | libjpeg-turbo | IJG libjpeg | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|---:|
-| Photo, 3000 x 4000 | 10.8 ms | 3.16x | 1.26x | 3.45x |
-| Photo, 960 x 1280 | 2.25 ms | 2.06x | 1.05x | 2.29x |
+| Photo, 3000 x 4000 | 10.7 ms | 3.14x | 1.08x | 3.42x |
+| Photo, 960 x 1280 | 2.01 ms | 2.26x | 1.11x | 2.52x |
 
 JPEG encode, quality 75, 4:2:0 (cjpeg's defaults):
 

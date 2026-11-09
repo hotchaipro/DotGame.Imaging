@@ -2,8 +2,9 @@
 //
 // Part of the JPEG decoder (JpegDecoder.cs). The decoder's port notes and notices:
 //
-// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, the whole image decoded
-// at once and output a row at a time, and the Huffman decoding, vector forms and buffer handling new.
+// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, a progressive or
+// multiscan image decoded whole before it's output, and the Huffman decoding, vector forms and buffer
+// handling new.
 //
 // The inverse DCT's arithmetic, the upsampling, the color conversion, the range limiting, the AC
 // refinement, the color space guess, the block smoothing rule and the context rows follow jidctint.c,
@@ -75,11 +76,11 @@ internal static partial class JpegDecoder
         {
             if ((c.H == maxH) && (c.V == maxV))
             {
-                return c.Plane.AsSpan(y * c.Stride, width);
+                return c.Plane.AsSpan(c.RowOffset(y), width);
             }
 
             int lastRow = c.DownsampledHeight - 1;
-            ReadOnlySpan<byte> Plane(int r) => c.Plane.AsSpan(Math.Clamp(r, 0, lastRow) * c.Stride, c.Stride);
+            ReadOnlySpan<byte> Plane(int r) => c.Plane.AsSpan(c.RowOffset(Math.Clamp(r, 0, lastRow)), c.Stride);
 
             if ((c.H * 2 == maxH) && (c.V == maxV))
             {
@@ -172,6 +173,30 @@ internal static partial class JpegDecoder
             }
         }
 
+        // Whether the fancy upsamplers' vector forms run: they shift columns across vectors
+        private static bool Shifts => AdvSimd.Arm64.IsSupported || Ssse3.IsSupported;
+
+        // The column before each of b's: a's last, then b's first seven
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<short> Before(
+            Vector128<short> a,
+            Vector128<short> b)
+        {
+            return AdvSimd.Arm64.IsSupported ? AdvSimd.ExtractVector128(a, b, 7) : Ssse3.AlignRight(b.AsByte(), a.AsByte(), 14).AsInt16();
+        }
+
+        // The column after each of a's: a's last seven, then b's first
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<short> After(
+            Vector128<short> a,
+            Vector128<short> b)
+        {
+            return AdvSimd.Arm64.IsSupported ? AdvSimd.ExtractVector128(a, b, 1) : Ssse3.AlignRight(b.AsByte(), a.AsByte(), 2).AsInt16();
+        }
+
+        // The fancy upsamplers' vector forms take sixteen columns at a time from column 0, each
+        // column's values once, its neighbors shifted across from them (as libjpeg-turbo's NEON
+        // does); the first column's left neighbor is itself, which gives the C's first output
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static void H2V1Fancy(
             ReadOnlySpan<byte> input,
@@ -181,20 +206,24 @@ internal static partial class JpegDecoder
             int value = input[0];
             output[0] = (byte)value;
             output[1] = (byte)(((value * 3) + input[1] + 2) >> 2);
-            int i = 1;
-            if (Vectors)
+            int i = 0;
+            if (Shifts)
             {
                 var one = Vector128.Create((short)1);
                 var two = Vector128.Create((short)2);
+                var carry = Vector128.Create((short)value);
                 for (; i + 17 <= count; i += 16)
                 {
                     var (tl, th) = Load16(input, i);
-                    var (ll, lh) = Load16(input, i - 1);
-                    var (nl, nh) = Load16(input, i + 1);
-                    StoreInterleaved(((tl * 3) + ll + one) >> 2, ((th * 3) + lh + one) >> 2, ((tl * 3) + nl + two) >> 2, ((th * 3) + nh + two) >> 2, output, 2 * i);
+                    var next = Vector128.CreateScalar((short)input[i + 16]);
+                    var tl3 = tl * 3;
+                    var th3 = th * 3;
+                    StoreInterleaved((tl3 + Before(carry, tl) + one) >> 2, (th3 + Before(tl, th) + one) >> 2, (tl3 + After(tl, th) + two) >> 2, (th3 + After(th, next) + two) >> 2, output, 2 * i);
+                    carry = th;
                 }
             }
 
+            i = Math.Max(i, 1);
             for (; i < count - 1; i++)
             {
                 value = input[i] * 3;
@@ -263,20 +292,56 @@ internal static partial class JpegDecoder
             int first = Sum(near, far, 0);
             output[0] = (byte)(((first * 4) + 8) >> 4);
             output[1] = (byte)(((first * 3) + Sum(near, far, 1) + 7) >> 4);
-            int i = 1;
-            if (Vectors)
+            int i = 0;
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // As libjpeg-turbo's NEON: the column sums by widening multiply and add, each output's
+                // 3 x sum + neighbor by multiply-add, and its + 8 or + 7, >> 4 and narrowing in a
+                // rounding (or plain) narrowing shift
+                var three = Vector128.Create((byte)3);
+                var threes = Vector128.Create((ushort)3);
+                var seven = Vector128.Create((ushort)7);
+                ref byte nearStart = ref MemoryMarshal.GetReference(near);
+                ref byte farStart = ref MemoryMarshal.GetReference(far);
+                ref byte target = ref MemoryMarshal.GetReference(output);
+                var carry = Vector128.Create((ushort)first);
+                for (; i + 17 <= count; i += 16)
+                {
+                    var n = Vector128.LoadUnsafe(ref nearStart, (nuint)i);
+                    var f = Vector128.LoadUnsafe(ref farStart, (nuint)i);
+                    var low = AdvSimd.AddWideningLower(AdvSimd.MultiplyWideningLower(n.GetLower(), three.GetLower()), f.GetLower());
+                    var high = AdvSimd.AddWideningUpper(AdvSimd.MultiplyWideningUpper(n, three), f);
+                    var next = Vector128.CreateScalar((ushort)Sum(near, far, i + 16));
+                    var even = AdvSimd.ShiftRightLogicalRoundedNarrowingUpper(
+                        AdvSimd.ShiftRightLogicalRoundedNarrowingLower(AdvSimd.MultiplyAdd(AdvSimd.ExtractVector128(carry, low, 7), low, threes), 4),
+                        AdvSimd.MultiplyAdd(AdvSimd.ExtractVector128(low, high, 7), high, threes),
+                        4);
+                    var odd = AdvSimd.ShiftRightLogicalNarrowingUpper(
+                        AdvSimd.ShiftRightLogicalNarrowingLower(AdvSimd.MultiplyAdd(AdvSimd.ExtractVector128(low, high, 1) + seven, low, threes), 4),
+                        AdvSimd.MultiplyAdd(AdvSimd.ExtractVector128(high, next, 1) + seven, high, threes),
+                        4);
+                    AdvSimd.Arm64.ZipLow(even, odd).StoreUnsafe(ref target, (nuint)(2 * i));
+                    AdvSimd.Arm64.ZipHigh(even, odd).StoreUnsafe(ref target, (nuint)((2 * i) + 16));
+                    carry = high;
+                }
+            }
+            else if (Shifts)
             {
                 var eight = Vector128.Create((short)8);
                 var seven = Vector128.Create((short)7);
+                var carry = Vector128.Create((short)first);
                 for (; i + 17 <= count; i += 16)
                 {
                     var (tl, th) = Sums(near, far, i);
-                    var (ll, lh) = Sums(near, far, i - 1);
-                    var (nl, nh) = Sums(near, far, i + 1);
-                    StoreInterleaved(((tl * 3) + ll + eight) >> 4, ((th * 3) + lh + eight) >> 4, ((tl * 3) + nl + seven) >> 4, ((th * 3) + nh + seven) >> 4, output, 2 * i);
+                    var next = Vector128.CreateScalar((short)Sum(near, far, i + 16));
+                    var tl3 = tl * 3;
+                    var th3 = th * 3;
+                    StoreInterleaved((tl3 + Before(carry, tl) + eight) >> 4, (th3 + Before(tl, th) + eight) >> 4, (tl3 + After(tl, th) + seven) >> 4, (th3 + After(th, next) + seven) >> 4, output, 2 * i);
+                    carry = th;
                 }
             }
 
+            i = Math.Max(i, 1);
             for (; i < count - 1; i++)
             {
                 int three = Sum(near, far, i) * 3;

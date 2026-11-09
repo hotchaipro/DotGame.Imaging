@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
 //
-// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, the whole image decoded
-// at once and output a row at a time, and the Huffman decoding, vector forms and buffer handling new.
+// Ported from libjpeg-turbo 3.2.1, modified by Hot Chai Games LLC: written in C#, a progressive or
+// multiscan image decoded whole before it's output, and the Huffman decoding, vector forms and buffer
+// handling new.
 //
 // The inverse DCT's arithmetic, the upsampling, the color conversion, the range limiting, the AC
 // refinement, the color space guess, the block smoothing rule and the context rows follow jidctint.c,
@@ -45,6 +46,7 @@
 using System;
 using System.Buffers.Binary;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace DotGame.Imaging.Jpeg;
 
@@ -167,7 +169,7 @@ internal static partial class JpegDecoder
         // The decoder keeps the bytes for its whole run, so they're copied into an array: a few
         // percent of a decode's time
         var decoder = new Decoding(data.ToArray(), bytesPerPixel, pixels.Length);
-        decoder.Run();
+        decoder.Run(pixels);
         decoder.Output(pixels);
     }
 
@@ -185,8 +187,17 @@ internal static partial class JpegDecoder
         public int DownsampledWidth;
         public int DownsampledHeight;
         public short[] Coefficients = [];   // progressive images only
-        public byte[] Plane = [];           // the samples, BlocksPerLine * 8 wide
+        public byte[] Plane = [];           // the samples, BlocksPerLine * 8 wide: every row, or a ring of RingRows
         public int Stride;
+        public int RingRows;                // 0: the plane has every row
+
+        // Where row y of the component's samples starts in its plane
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int RowOffset(
+            int y)
+        {
+            return ((this.RingRows == 0) ? y : (y % this.RingRows)) * this.Stride;
+        }
         public int DcPredictor;
         public int DcTable;
         public int AcTable;
