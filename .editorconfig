@@ -12,7 +12,7 @@ indent_size = 4
 [*.md]
 trim_trailing_whitespace = false
 
-[*.{csproj,props,targets,slnx,yml}]
+[*.{json,yml,yaml}]
 indent_size = 2
 
 [*.cs]
