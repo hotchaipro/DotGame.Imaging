@@ -11,7 +11,7 @@
     <!-- For IDE0005 (unneeded usings), which needs it; the tests don't need doc comments (CS1591) -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Test names separate the member and the case with underscores (Decode_ReadsEveryFormat) -->
-    <NoWarn>$(NoWarn);CA1707;CS1591</NoWarn>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

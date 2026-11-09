@@ -1,0 +1,4 @@
+# Test names separate the member and the case with underscores (Decode_MatchesLibjpegTurbo)
+
+[*.cs]
+dotnet_diagnostic.CA1707.severity = none
