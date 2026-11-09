@@ -1,14 +1,17 @@
 // Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
 
 using System;
+using System.Buffers;
 using System.IO;
 
 namespace DotGame.Imaging.Jpeg;
 
 /// <summary>
-/// Reads JPEG images: baseline, extended and progressive Huffman-coded JPEG, 8-bit samples, grayscale,
-/// YCbCr and RGB, every sampling factor, restart intervals. A C# port of libjpeg-turbo 3.2.1, whose
-/// pixels it gives, bit for bit, with libjpeg-turbo's defaults.
+/// Reads and writes JPEG images. It reads baseline, extended and progressive Huffman-coded JPEG, 8-bit
+/// samples, grayscale, YCbCr and RGB, every sampling factor, restart intervals: a C# port of
+/// libjpeg-turbo 3.2.1, whose pixels it gives, bit for bit, with libjpeg-turbo's defaults. It writes
+/// baseline and progressive YCbCr (4:2:0, 4:2:2, 4:4:4) and grayscale JPEG: the same port, with cjpeg's
+/// files.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -88,5 +91,48 @@ public static class JpegCodec
     {
         int bytesPerPixel = PixelLayouts.BytesPerPixel(layout);
         JpegDecoder.Decode(jpeg, pixels, bytesPerPixel);
+    }
+
+    /// <summary>
+    /// Encodes pixels as a JPEG image and writes the file to <paramref name="writer"/>: with the same
+    /// settings, byte for byte what cjpeg 3.2.1 writes. JPEG has no alpha, so it's dropped, as cjpeg
+    /// drops it.
+    /// </summary>
+    /// <param name="writer">Where the file's bytes go.</param>
+    /// <param name="width">The image's width in pixels.</param>
+    /// <param name="height">The image's height in pixels.</param>
+    /// <param name="pixels">The pixels: width x height of them, in <paramref name="layout"/>.</param>
+    /// <param name="layout">How <paramref name="pixels"/> are laid out.</param>
+    /// <param name="unpremultiplyAlpha">
+    /// Whether the encoder divides each pixel's red, green and blue by its alpha before encoding it:
+    /// true for premultiplied pixels, whose colors are otherwise darker where they're translucent.
+    /// </param>
+    /// <param name="options">How to encode the image, or null for cjpeg's defaults (quality 75, 4:2:0).</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The width or height isn't positive, the image is larger than JPEG allows or than 8192 x 8192
+    /// pixels, an option is out of its range, or <paramref name="layout"/> isn't a layout.
+    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't width x height pixels.</exception>
+    public static void Encode(
+        IBufferWriter<byte> writer,
+        int width,
+        int height,
+        ReadOnlySpan<byte> pixels,
+        PixelLayout layout,
+        bool unpremultiplyAlpha,
+        JpegEncoderOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        _ = PixelLayouts.BytesPerPixel(layout);
+
+        if (unpremultiplyAlpha)
+        {
+            byte[] straight = pixels.ToArray();
+            Premultiply.UndoPixels(straight);
+            pixels = straight;
+        }
+
+        JpegEncoder.Encode(writer, width, height, pixels, options);
     }
 }

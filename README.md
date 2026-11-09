@@ -5,7 +5,7 @@ PNG, JPEG and WebP image codecs for .NET, with no dependencies. Trim and AOT saf
 | Format | Decode | Encode |
 |---|---|---|
 | PNG | Yes, written from the PNG specification, using .NET's zlib | Yes |
-| JPEG | Yes, a C# port of libjpeg-turbo 3.2.1 with the same pixels | No |
+| JPEG | Yes, a C# port of libjpeg-turbo 3.2.1 with the same pixels | Yes, baseline and progressive: the same port, with cjpeg's files |
 | WebP | Yes, a C# port of libwebp 1.6.0 with the same pixels | Yes, lossless and lossy: the same port, with cwebp's files |
 
 Pixels go into a buffer you provide, so decoding allocates nothing for them.
@@ -61,10 +61,24 @@ WebPCodec.Encode(webp, width, height, pixels, PixelLayout.Rgba32, unpremultiplyA
 File.WriteAllBytes("image.webp", webp.WrittenSpan);
 ```
 
+Encoding a JPEG: with the same settings, the file is byte for byte what cjpeg 3.2.1 writes (here,
+`cjpeg -quality 90 -sample 1x1 -optimize`):
+
+```csharp
+using System.Buffers;
+using DotGame.Imaging;
+using DotGame.Imaging.Jpeg;
+
+var jpeg = new ArrayBufferWriter<byte>();
+JpegCodec.Encode(jpeg, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false,
+    new JpegEncoderOptions { Quality = 90, Subsampling = JpegSubsampling.YCbCr444, OptimizeHuffman = true });
+File.WriteAllBytes("image.jpg", jpeg.WrittenSpan);
+```
+
 ## License
 
-MIT (`LICENSE`). The JPEG decoder and the WebP decoder and encoder are ports of libjpeg-turbo and
-libwebp, under their own licenses: see `THIRD-PARTY-NOTICES.md`. An app that ships the JPEG decoder says in its credits: "this
+MIT (`LICENSE`). The JPEG and WebP decoders and encoders are ports of libjpeg-turbo and
+libwebp, under their own licenses: see `THIRD-PARTY-NOTICES.md`. An app that ships the JPEG codec says in its credits: "this
 software is based in part on the work of the Independent JPEG Group".
 
 ## Building

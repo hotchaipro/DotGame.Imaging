@@ -8,8 +8,8 @@ include it.
 
 - Source: https://github.com/libjpeg-turbo/libjpeg-turbo, tag `3.2.1`
 - License: the IJG License, and the zlib License for Arm's NEON inverse DCT
-- Ported in: the JPEG decoder (`DotGame.Imaging.Jpeg`; in the source, `src/Jpeg/`, where
-  `JpegDecoder.cs`'s header names the files it follows and `README.ijg` is the IJG README the
+- Ported in: the JPEG decoder and encoder (`DotGame.Imaging.Jpeg`; in the source, `src/Jpeg/`,
+  where `JpegDecoder.cs`'s and `JpegEncoder.cs`'s headers name the files they follow and `README.ijg` is the IJG README the
   license asks for)
 
 This software is based in part on the work of the Independent JPEG Group.
