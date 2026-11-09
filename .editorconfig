@@ -1,0 +1,63 @@
+# Code style. The build enforces the rules marked error or warning (every warning is an error).
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Trailing whitespace can be significant in Markdown
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{csproj,props,targets,slnx,yml}]
+indent_size = 2
+
+[*.cs]
+file_header_template = Copyright (c) 2026 Hot Chai Games LLC. Licensed under the MIT License.
+
+# IDE0005: no using directives that aren't needed
+dotnet_diagnostic.IDE0005.severity = warning
+csharp_using_directive_placement = outside_namespace:error
+dotnet_sort_system_directives_first = true:error
+dotnet_separate_import_directive_groups = true:error
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = true:error
+csharp_prefer_system_threading_lock = true:error
+csharp_style_prefer_not_pattern = true:error
+
+# Parentheses wherever precedence isn't obvious: a + (b * c), (a < b) == (c < d)
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:warning
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:warning
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:warning
+dotnet_style_parentheses_in_other_operators = always_for_clarity:warning
+# IDE0047 asks to remove parentheses it thinks unneeded, such as (a / 2) * b; extra ones may stay
+dotnet_diagnostic.IDE0047.severity = none
+
+# Blank lines: no double blank lines, none between closing braces or after a constructor
+# initializer's colon
+dotnet_style_allow_multiple_blank_lines_experimental = false:warning
+csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false:error
+csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = false:error
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+
+# IDE0055: the code is laid out as Format Document lays it out (indentation, spacing, braces on
+# their own lines, and the other formatting defaults)
+dotnet_diagnostic.IDE0055.severity = warning
+
+dotnet_style_readonly_field = true:warning
+dotnet_style_qualification_for_field = true:warning
+dotnet_style_qualification_for_property = true:warning
+dotnet_style_qualification_for_method = true:warning
+dotnet_style_qualification_for_event = true:warning
+
+# Interfaces begin with I
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = warning
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = *
+dotnet_naming_style.begins_with_i.required_prefix = I
+dotnet_naming_style.begins_with_i.capitalization = pascal_case

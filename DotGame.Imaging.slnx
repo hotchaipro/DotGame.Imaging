@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/DotGame.Imaging.csproj" />
+  <Project Path="test/DotGame.Imaging.Tests.csproj" />
+</Solution>
