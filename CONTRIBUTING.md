@@ -9,7 +9,7 @@ decoder gives, or the file another encoder writes. For a security problem, see `
 
 ## Making a change
 
-Build and test with the .NET 10 SDK or later:
+Build and test with the .NET 11 SDK or later:
 
 ```bash
 dotnet build

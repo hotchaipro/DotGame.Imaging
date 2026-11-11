@@ -171,7 +171,7 @@ internal static partial class Vp8Decoder
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool Hev(
-        Span<byte> buf,
+        ReadOnlySpan<byte> buf,
         int p,
         int step,
         int threshold)
@@ -182,7 +182,7 @@ internal static partial class Vp8Decoder
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool NeedsFilter(
-        Span<byte> buf,
+        ReadOnlySpan<byte> buf,
         int p,
         int step,
         int t)
@@ -193,7 +193,7 @@ internal static partial class Vp8Decoder
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool NeedsFilter2(
-        Span<byte> buf,
+        ReadOnlySpan<byte> buf,
         int p,
         int step,
         int t,

@@ -11,7 +11,7 @@ Trim and AOT safe.
 
 ## Installing
 
-For .NET 10 and later:
+For .NET 11 and later (version 1.0.0 supports .NET 10):
 
 ```bash
 dotnet add package DotGame.Imaging
@@ -80,16 +80,16 @@ File.WriteAllBytes("image.jpg", jpeg.WrittenSpan);
 
 Times relative to each format's reference C library (lower is faster): libpng, libjpeg-turbo and
 libwebp. The first column is that library's time. DotGame.Imaging
-and ImageSharp ran on .NET 10's JIT; DotGame.Imaging published with NativeAOT is within a few percent
+and ImageSharp ran on .NET 11's JIT; DotGame.Imaging published with NativeAOT is within a few percent
 of these.
 
 PNG decode:
 
 | Image | libpng | libspng | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|---:|
-| Sprite atlas, 2048 x 2048, alpha | 23.4 ms | 1.00x | 1.04x | 1.29x |
-| Sprite, 238 x 214, alpha | 0.31 ms | 0.99x | 0.90x | 1.07x |
-| Photo, 960 x 1280 | 10.2 ms | 0.98x | 1.14x | 1.60x |
+| Sprite atlas, 2048 x 2048, alpha | 23.9 ms | 0.98x | 1.03x | 1.27x |
+| Sprite, 238 x 214, alpha | 0.31 ms | 0.99x | 0.91x | 1.06x |
+| Photo, 960 x 1280 | 10.2 ms | 0.98x | 1.13x | 1.61x |
 
 PNG encode, with the file's size (each library's default compression). The PNG encoder isn't a
 port: it chooses filters its own way and compresses with .NET's zlib (zlib-ng), so its files differ
@@ -97,43 +97,43 @@ from libpng's in size:
 
 | Image | libpng | libspng | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|---:|
-| Sprite atlas, 2048 x 2048, alpha | 300 ms, 2,891 KB | 1.32x, 2,891 KB | 0.36x, 2,877 KB | 1.00x, 2,904 KB |
-| Sprite, 238 x 214, alpha | 6.14 ms, 58 KB | 1.18x, 58 KB | 0.29x, 59 KB | 1.03x, 59 KB |
-| Photo, 960 x 1280 | 195 ms, 2,640 KB | 1.14x, 2,640 KB | 0.24x, 2,343 KB | 0.94x, 2,649 KB |
+| Sprite atlas, 2048 x 2048, alpha | 300 ms, 2,891 KB | 1.31x, 2,891 KB | 0.36x, 2,877 KB | 0.99x, 2,904 KB |
+| Sprite, 238 x 214, alpha | 6.09 ms, 58 KB | 1.20x, 58 KB | 0.30x, 59 KB | 1.02x, 59 KB |
+| Photo, 960 x 1280 | 195 ms, 2,640 KB | 1.14x, 2,640 KB | 0.24x, 2,343 KB | 0.93x, 2,649 KB |
 
 JPEG decode:
 
 | Image | libjpeg-turbo | IJG libjpeg | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|---:|
-| Photo, 3000 x 4000 | 10.7 ms | 3.14x | 1.08x | 3.42x |
-| Photo, 960 x 1280 | 2.01 ms | 2.26x | 1.11x | 2.52x |
+| Photo, 3000 x 4000 | 10.8 ms | 3.13x | 1.10x | 3.60x |
+| Photo, 960 x 1280 | 2.02 ms | 2.29x | 1.09x | 2.65x |
 
 JPEG encode, quality 75, 4:2:0 (cjpeg's defaults):
 
 | Image | libjpeg-turbo | IJG libjpeg | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|---:|
-| Photo, 3000 x 4000 | 13.2 ms | 6.03x | 1.12x | 7.03x |
-| Photo, 960 x 1280 | 1.68 ms | 6.90x | 1.15x | 7.06x |
+| Photo, 3000 x 4000 | 13.1 ms | 6.07x | 1.13x | 6.96x |
+| Photo, 960 x 1280 | 1.69 ms | 6.86x | 1.11x | 6.95x |
 
 WebP decode:
 
 | Image | libwebp | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|
-| Lossy: Sprite atlas, 2048 x 2048, alpha | 20.6 ms | 1.11x | 3.02x |
-| Lossy: Photo, 3000 x 4000 | 23.6 ms | 1.18x | 4.44x |
-| Lossy: Photo, 960 x 1280 | 10.2 ms | 1.12x | 2.41x |
-| Lossless: Sprite atlas, 2048 x 2048, alpha | 25.0 ms | 0.95x | 1.93x |
-| Lossless: Sprite, 238 x 214, alpha | 0.31 ms | 0.85x | 1.82x |
+| Lossy: Sprite atlas, 2048 x 2048, alpha | 20.8 ms | 1.10x | 2.85x |
+| Lossy: Photo, 3000 x 4000 | 23.6 ms | 1.18x | 4.06x |
+| Lossy: Photo, 960 x 1280 | 10.1 ms | 1.14x | 2.35x |
+| Lossless: Sprite atlas, 2048 x 2048, alpha | 24.9 ms | 0.94x | 1.61x |
+| Lossless: Sprite, 238 x 214, alpha | 0.31 ms | 0.89x | 1.70x |
 
 WebP encode, quality 75, method 4 (cwebp's defaults, and `-lossless`):
 
 | Image | libwebp | DotGame.Imaging | ImageSharp |
 |---|---:|---:|---:|
-| Lossy: Sprite atlas, 2048 x 2048, alpha | 187 ms | 1.07x | 5.99x |
-| Lossy: Photo, 3000 x 4000 | 330 ms | 1.06x | 8.29x |
-| Lossy: Photo, 960 x 1280 | 65.2 ms | 1.02x | 7.90x |
-| Lossless: Sprite atlas, 2048 x 2048, alpha | 1293 ms | 1.04x | 1.19x |
-| Lossless: Sprite, 238 x 214, alpha | 40.1 ms | 0.90x | 0.93x |
+| Lossy: Sprite atlas, 2048 x 2048, alpha | 188 ms | 1.06x | 5.68x |
+| Lossy: Photo, 3000 x 4000 | 331 ms | 1.06x | 7.75x |
+| Lossy: Photo, 960 x 1280 | 65.4 ms | 1.01x | 7.60x |
+| Lossless: Sprite atlas, 2048 x 2048, alpha | 1301 ms | 1.05x | 1.17x |
+| Lossless: Sprite, 238 x 214, alpha | 40.1 ms | 0.88x | 0.92x |
 
 How these were measured:
 
@@ -141,7 +141,7 @@ How these were measured:
 - Each time is the median of at least 15 batches over at least 2 seconds, after a warm-up.
 - The C libraries are Homebrew's builds, called from C compiled with `-O2`: libpng 1.6.59 (with
   macOS's zlib), libspng 0.7.4, libjpeg-turbo 3.2.1, IJG libjpeg 10 and libwebp 1.6.0.
-- .NET 10.0.403; ImageSharp 3.1.12.
+- .NET 11.0.0 (SDK 11.0.100); ImageSharp 3.1.12.
 - Decoders write RGBA, except IJG libjpeg, which has no RGBA output and writes RGB. DotGame.Imaging
   decodes into a buffer it's given; ImageSharp allocates its image.
 - Encoders read RGBA, except IJG libjpeg, which reads RGB.
@@ -155,7 +155,7 @@ Group".
 
 ## Building and testing
 
-`src/` has the library, a folder per format, and `test/` its tests. Building needs the .NET 10 SDK
+`src/` has the library, a folder per format, and `test/` its tests. Building needs the .NET 11 SDK
 or later.
 
 ```bash

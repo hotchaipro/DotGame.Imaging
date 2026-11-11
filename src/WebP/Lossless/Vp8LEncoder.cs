@@ -398,7 +398,9 @@ internal static partial class Vp8LEncoder
 
     private static int EncoderAnalyze(
         Encoder enc,
+#pragma warning disable CA1517 // it writes its elements' fields (span[i].Field = ...), which the rule doesn't see
         Span<CrunchConfig> crunchConfigs,
+#pragma warning restore CA1517
         out bool redAndBlueAlwaysZero)
     {
         int width = enc.Width;

@@ -428,7 +428,9 @@ internal static partial class Vp8LEncoder
 
     private static int CodeRepeatedValues(
         int repetitions,
+#pragma warning disable CA1517 // it writes its elements' fields (span[i].Field = ...), which the rule doesn't see
         Span<HuffmanTreeToken> tokens,
+#pragma warning restore CA1517
         int t,
         int value,
         int previousValue)
@@ -475,7 +477,9 @@ internal static partial class Vp8LEncoder
 
     private static int CodeRepeatedZeros(
         int repetitions,
+#pragma warning disable CA1517 // it writes its elements' fields (span[i].Field = ...), which the rule doesn't see
         Span<HuffmanTreeToken> tokens,
+#pragma warning restore CA1517
         int t)
     {
         while (repetitions >= 1)
