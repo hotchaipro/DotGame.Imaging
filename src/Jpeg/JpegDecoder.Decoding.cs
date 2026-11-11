@@ -281,7 +281,7 @@ internal static partial class JpegDecoder
             {
                 var c = new Component
                 {
-                    Id = segment[6 + (3 * i)],
+                    Id = UniqueId(segment[6 + (3 * i)], this.components.AsSpan(0, i)),
                     H = segment[7 + (3 * i)] >> 4,
                     V = segment[7 + (3 * i)] & 15,
                     QuantTable = segment[8 + (3 * i)] & 3,
@@ -313,6 +313,31 @@ internal static partial class JpegDecoder
                     c.Coefficients = new short[c.BlocksPerLine * c.BlocksPerColumn * 64];
                 }
             }
+        }
+
+        // A component id that repeats one before it in the same frame or scan header is read as the
+        // largest id before it plus one, as libjpeg-turbo reads it (jdmarker.c), so a frame's
+        // components each have their own id and a scan never names one twice: a scan that named a
+        // component twice left another undecoded, its samples whatever was in memory
+        private static int UniqueId(
+            int id,
+            ReadOnlySpan<Component> before)
+        {
+            foreach (var other in before)
+            {
+                if (other.Id == id)
+                {
+                    int largest = before[0].Id;
+                    foreach (var c in before)
+                    {
+                        largest = Math.Max(largest, c.Id);
+                    }
+
+                    return largest + 1;
+                }
+            }
+
+            return id;
         }
 
         private void ReadHuffmanTables(

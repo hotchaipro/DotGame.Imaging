@@ -179,7 +179,7 @@ internal static partial class Vp8LDecoder
     // One predictor over a run of a row's pixels: each the residual plus its prediction from the
     // pixels decoded already (left, and the row above). Those that don't read the pixel to the left
     // take four pixels at a time: their bytes add and average independently, as vectors' do.
-    private static void PredictorAdd(
+    internal static void PredictorAdd(
         int predictor,
         uint[] pixels,
         int input,
@@ -373,6 +373,17 @@ internal static partial class Vp8LDecoder
         int index)
     {
         return Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref pixels, index)));
+    }
+
+    // Two pixels, as the low half of Load's four. A widening add or subtract of x.GetLower()
+    // compiles incorrectly on .NET 11's Arm64 JIT (it takes the wide form, which reads all of x:
+    // dotnet/runtime#137322), so those load their low halves with this instead
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector64<byte> LoadLower(
+        ref uint pixels,
+        int index)
+    {
+        return Vector64.LoadUnsafe(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref pixels, index)));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

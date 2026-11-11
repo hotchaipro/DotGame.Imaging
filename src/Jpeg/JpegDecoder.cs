@@ -94,11 +94,11 @@ internal static partial class JpegDecoder
         int position = 2;
         while (true)
         {
-            // The next marker: 0xFF, any fill 0xFFs, then its code; before the frame header, every
-            // marker but SOI's has a segment
-            if ((position >= data.Length) || (data[position] != 0xFF))
+            // The next marker, found as the decoder finds it (Decoding.Run), so the two read the same
+            // frame header: any bytes up to an 0xFF, any fill 0xFFs, then its code
+            while ((position < data.Length) && (data[position] != 0xFF))
             {
-                return false;
+                position++;
             }
 
             while ((position < data.Length) && (data[position] == 0xFF))
@@ -106,12 +106,27 @@ internal static partial class JpegDecoder
                 position++;
             }
 
-            if (position + 3 > data.Length)
+            if (position >= data.Length)
             {
                 return false;
             }
 
             int marker = data[position++];
+            if (marker == 0xD9)
+            {
+                return false; // the end, before any frame
+            }
+
+            if ((marker == 0x00) || ((marker >= 0xD0) && (marker <= 0xD7)))
+            {
+                continue; // a stuffed zero or a stray restart marker, which have no segment
+            }
+
+            if (position + 2 > data.Length)
+            {
+                return false;
+            }
+
             int length = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(position));
             if ((length < 2) || (position + length > data.Length))
             {
@@ -139,10 +154,9 @@ internal static partial class JpegDecoder
                 return true;
             }
 
-            if ((marker == 0xD9) || (marker == 0xDA) || (marker == 0xD8) || ((marker >= 0xD0) && (marker <= 0xD7)) || (marker == 0x01))
+            if (marker == 0xDA)
             {
-                // The end, a scan or a marker with no segment before any frame: not a JPEG this reads
-                return false;
+                return false; // a scan before any frame, which the decoder refuses
             }
 
             position += length;

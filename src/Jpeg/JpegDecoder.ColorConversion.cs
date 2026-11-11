@@ -147,10 +147,13 @@ internal static partial class JpegDecoder
                 var bv = Vector128.LoadUnsafe(ref cbs, (nuint)i);
                 var rv = Vector128.LoadUnsafe(ref crs, (nuint)i);
 
-                // b and r less 128 as shorts (the unsigned differences' bits are the signed ones)
-                var bLow = AdvSimd.SubtractWideningLower(bv.GetLower(), center).AsInt16();
+                // b and r less 128 as shorts (the unsigned differences' bits are the signed ones).
+                // The low halves are loaded on their own: a widening subtract of x.GetLower() compiles
+                // incorrectly on .NET 11's Arm64 JIT (it takes the wide form, which reads all of x:
+                // dotnet/runtime#137322)
+                var bLow = AdvSimd.SubtractWideningLower(Vector64.LoadUnsafe(ref cbs, (nuint)i), center).AsInt16();
                 var bHigh = AdvSimd.SubtractWideningUpper(bv, Vector128.Create((byte)128)).AsInt16();
-                var rLow = AdvSimd.SubtractWideningLower(rv.GetLower(), center).AsInt16();
+                var rLow = AdvSimd.SubtractWideningLower(Vector64.LoadUnsafe(ref crs, (nuint)i), center).AsInt16();
                 var rHigh = AdvSimd.SubtractWideningUpper(rv, Vector128.Create((byte)128)).AsInt16();
                 var yLow = AdvSimd.ZeroExtendWideningLower(yv.GetLower()).AsInt16();
                 var yHigh = AdvSimd.ZeroExtendWideningUpper(yv).AsInt16();

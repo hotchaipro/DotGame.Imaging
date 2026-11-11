@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using DotGame.Imaging.Jpeg;
 using DotGame.Imaging.Png;
 
 namespace DotGame.Imaging.Tests;
@@ -72,6 +73,38 @@ public sealed class FuzzedImageTests
         int byteCount = ImageDecoder.TryGetDecodedSize(data, PixelLayout.Rgba32, out _, out _, out int count) ? count : 0;
 
         Assert.Throws<InvalidDataException>(() => ImageDecoder.Decode(data, new byte[byteCount], PixelLayout.Rgba32, false));
+    }
+
+    // A stuffed zero (FF 00) before the frame header, which TryGetDecodedSize read as a marker with a
+    // segment and the decoder skips, so the two read different frame headers: Decode threw
+    // ArgumentException for the buffer TryGetDecodedSize gave the size of
+    [Fact]
+    public void TryGetDecodedSize_ReadsTheFrameTheDecoderReads()
+    {
+        byte[] data = TestImages.Read("Fuzz/Jpeg/StuffedZeroBeforeFrame.jpg");
+
+        Assert.True(JpegCodec.TryGetDecodedSize(data, PixelLayout.Rgba32, out _, out _, out int byteCount));
+        var error = Record.Exception(() => JpegCodec.Decode(data, new byte[byteCount], PixelLayout.Rgba32));
+        Assert.True(error is null or InvalidDataException or NotSupportedException, $"Decode threw {error}");
+    }
+
+    // A scan naming component 1 twice and not component 2, which left component 2's samples
+    // undecoded, whatever was in memory: libjpeg-turbo reads a repeated id as the largest before it
+    // plus one, here 2, so it decodes as the file with 2 there does
+    [Fact]
+    public void Decode_ReadsARepeatedComponentIdAsLibjpegTurbo()
+    {
+        byte[] data = TestImages.Read("Fuzz/Jpeg/ScanRepeatsComponent.jpg");
+        byte[] repaired = (byte[])data.Clone();
+        Assert.Equal(1, repaired[0x289]); // the scan's second component id
+        repaired[0x289] = 2;
+
+        Assert.True(JpegCodec.TryGetDecodedSize(data, PixelLayout.Rgba32, out _, out _, out int byteCount));
+        var pixels = new byte[byteCount];
+        var expected = new byte[byteCount];
+        JpegCodec.Decode(repaired, expected, PixelLayout.Rgba32);
+        JpegCodec.Decode(data, pixels, PixelLayout.Rgba32);
+        Assert.Equal(expected, pixels);
     }
 
     // A PNG image 1229209940 x 2027578208, whose byte count overflowed a long: TryGetDecodedSize said

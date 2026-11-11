@@ -132,7 +132,7 @@ internal static partial class Vp8LDecoder
                         var src = Load(ref inp, i);
                         var tl = Load(ref up, i - 1);
                         var t = Load(ref up, i);
-                        var diffLow = AdvSimd.SubtractWideningLower(t.GetLower(), tl.GetLower()).AsInt16();
+                        var diffLow = AdvSimd.SubtractWideningLower(LoadLower(ref up, i), LoadLower(ref up, i - 1)).AsInt16();
                         var diffHigh = AdvSimd.SubtractWideningUpper(t, tl).AsInt16();
                         var r0 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(l16.AsInt16() + diffLow) + src.GetLower();
                         l16 = Rotate16(AdvSimd.ZeroExtendWideningLower(r0));
