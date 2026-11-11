@@ -72,7 +72,7 @@ internal static partial class JpegDecoder
             var scan = new Component[count];
             for (int i = 0; i < count; i++)
             {
-                int id = header[1 + (2 * i)];
+                int id = UniqueId(header[1 + (2 * i)], scan.AsSpan(0, i));
                 var c = Array.Find(this.components, x => x.Id == id) ?? throw new InvalidDataException("A JPEG scan names a component the frame hasn't.");
                 c.DcTable = header[2 + (2 * i)] >> 4;
                 c.AcTable = header[2 + (2 * i)] & 15;
