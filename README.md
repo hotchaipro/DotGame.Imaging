@@ -11,7 +11,7 @@ Trim and AOT safe.
 
 ## Installing
 
-For .NET 11 and later (version 1.0.0 supports .NET 10):
+For .NET 11 and later (version 1.0.x supports .NET 10):
 
 ```bash
 dotnet add package DotGame.Imaging

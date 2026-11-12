@@ -4,6 +4,11 @@ name: Publish
 # stored anywhere. nuget.org's trusted publishing policy names this repository and this workflow, and the
 # login step trades this run's GitHub identity for a key that lasts an hour. Run by hand, with the
 # package's version. A version on nuget.org can't be replaced or deleted, only unlisted.
+#
+# After the push, it makes a draft GitHub release for the version, tagged vVERSION at the commit it
+# published (an existing tag is kept), and a prerelease if the version has a suffix. Write its notes and
+# publish it by hand: the tag is made when the draft is published. Untick "Set as the latest release"
+# for anything but the newest stable version, such as a fix release for an older major version.
 
 on:
   workflow_dispatch:
@@ -13,7 +18,7 @@ on:
         required: true
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -38,3 +43,22 @@ jobs:
           user: hotchai
       # Pushes the symbols package (.snupkg) beside it too
       - run: dotnet nuget push "out/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+      - name: Draft the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$VERSION"
+          if gh release view "$TAG" > /dev/null 2>&1; then echo "$TAG already has a release"; exit 0; fi
+          PRERELEASE=""
+          [[ "$VERSION" == *-* ]] && PRERELEASE="--prerelease"
+          cat > notes.md <<EOF
+          TODO: what changed, and any breaking changes.
+
+          \`\`\`bash
+          dotnet add package DotGame.Imaging --version $VERSION
+          \`\`\`
+
+          NuGet: https://www.nuget.org/packages/DotGame.Imaging/$VERSION
+          EOF
+          gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
+            --title "DotGame.Imaging $VERSION" --notes-file notes.md
