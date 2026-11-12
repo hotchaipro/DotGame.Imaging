@@ -163,4 +163,6 @@ dotnet build
 dotnet test
 ```
 
-To contribute, see `CONTRIBUTING.md`.
+The API reference, a page for every public type and member, is in
+[docs/](https://github.com/hotchaipro/DotGame.Imaging/blob/main/docs/README.md). To
+contribute, see `CONTRIBUTING.md`.

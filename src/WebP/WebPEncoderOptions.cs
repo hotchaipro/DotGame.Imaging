@@ -6,6 +6,10 @@ namespace DotGame.Imaging.WebP;
 /// How <see cref="WebPCodec.Encode"/> writes an image: its defaults are cwebp's, and with the same settings
 /// the file is byte for byte what cwebp 1.6.0 writes (lossless as <c>-lossless</c>, and so on).
 /// </summary>
+/// <remarks>
+/// A setting out of its range isn't caught when it's set: <see cref="WebPCodec.Encode"/> throws
+/// <see cref="System.ArgumentOutOfRangeException"/> for it.
+/// </remarks>
 public sealed class WebPEncoderOptions
 {
     /// <summary>
@@ -15,13 +19,14 @@ public sealed class WebPEncoderOptions
     public bool Lossless { get; init; }
 
     /// <summary>
-    /// 0 to 100 (cwebp's <c>-q</c>): for a lossy image its quality, from smallest to best; for a lossless
-    /// one the effort spent making it small, from fastest to smallest.
+    /// 0 to 100 (cwebp's <c>-q</c>; 75 by default): for a lossy image its quality, from smallest to
+    /// best; for a lossless one the effort spent making it small, from fastest to smallest.
     /// </summary>
     public float Quality { get; init; } = 75;
 
     /// <summary>
-    /// 0 (fastest) to 6 (slowest, and smallest): how many ways the encoder tries (cwebp's <c>-m</c>).
+    /// 0 (fastest) to 6 (slowest, and smallest): how many ways the encoder tries (cwebp's <c>-m</c>; 4
+    /// by default).
     /// </summary>
     public int Method { get; init; } = 4;
 
@@ -33,8 +38,8 @@ public sealed class WebPEncoderOptions
     public bool Exact { get; init; }
 
     /// <summary>
-    /// For a lossy image, 0 to 100 (cwebp's <c>-alpha_q</c>): its alpha's quality, where 100 stores it
-    /// losslessly. A lossless image's alpha is always lossless.
+    /// For a lossy image, 0 to 100 (cwebp's <c>-alpha_q</c>; 100 by default): its alpha's quality, where
+    /// 100 stores it losslessly. A lossless image's alpha is always lossless.
     /// </summary>
     public int AlphaQuality { get; init; } = 100;
 
@@ -45,8 +50,8 @@ public sealed class WebPEncoderOptions
     public bool UseSharpYuv { get; init; }
 
     /// <summary>
-    /// For a lossless image, 0 to 100 (cwebp's <c>-near_lossless</c>): 100 is exactly lossless, and less
-    /// lets pixels change, a little, to make the file smaller.
+    /// For a lossless image, 0 to 100 (cwebp's <c>-near_lossless</c>; 100 by default): 100 is exactly
+    /// lossless, and less lets pixels change, a little, to make the file smaller.
     /// </summary>
     public int NearLossless { get; init; } = 100;
 

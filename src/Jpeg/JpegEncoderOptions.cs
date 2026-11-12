@@ -34,6 +34,10 @@ internal enum JpegEncoderDct
 /// How <see cref="JpegCodec.Encode"/> writes an image: its defaults are cjpeg 3.2.1's, and with the same
 /// settings the file is byte for byte what cjpeg writes. Each setting is the cjpeg switch it names.
 /// </summary>
+/// <remarks>
+/// A setting out of its range isn't caught when it's set: <see cref="JpegCodec.Encode"/> throws
+/// <see cref="System.ArgumentOutOfRangeException"/> for it.
+/// </remarks>
 public sealed class JpegEncoderOptions
 {
     /// <summary>

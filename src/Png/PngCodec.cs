@@ -100,7 +100,9 @@ public static class PngCodec
     /// since a PNG file stores straight alpha: true for premultiplied pixels, such as those read back
     /// from a render texture.
     /// </param>
-    /// <param name="compressionLevel">How hard to work to make the file small.</param>
+    /// <param name="compressionLevel">
+    /// How hard to work to make the file small: <see cref="PngCompressionLevel.Optimal"/> by default.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// The width or height isn't positive, the image is larger than 8192 x 8192 pixels, or

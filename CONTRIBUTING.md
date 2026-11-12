@@ -32,6 +32,12 @@ A few things the library holds to:
   `Unshipped`: the analyzer's code fix (or `dotnet format analyzers --diagnostics RS0016`) adds it.
 - **The decoders take untrusted files.** A change to one is fuzzed with `fuzz/` (see its README)
   before it ships.
+- **The docs follow the code.** `docs/api` is generated from the doc comments, and every public type
+  and member has one: after changing a public API or its comments, run
+  `dotnet run tools/api-docs/generate.cs` (`-- --check` fails if `docs/api` is out of date, and
+  `-- --missing` lists members with no comment). After changing `README.md` or `docs/`,
+  `python3 tools/api-docs/check-docs.py` checks their links and compiles the README's samples. CI
+  runs both.
 
 Open a pull request against `main`. By contributing, you agree that your contribution is licensed under
 the MIT License, as the rest of the library is (`LICENSE`).

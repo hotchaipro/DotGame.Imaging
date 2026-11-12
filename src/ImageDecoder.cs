@@ -31,7 +31,8 @@ public static class ImageDecoder
     /// <param name="byteCount">The bytes the decoded pixels take, or 0.</param>
     /// <returns>
     /// Whether the bytes are an image in a format this library reads, with a header that reads (see
-    /// <see cref="PngCodec.TryGetDecodedSize"/> and <see cref="JpegCodec.TryGetDecodedSize"/>).
+    /// <see cref="PngCodec.TryGetDecodedSize"/>, <see cref="JpegCodec.TryGetDecodedSize"/> and
+    /// <see cref="WebPCodec.TryGetDecodedSize"/>).
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="layout"/> isn't a layout.</exception>
     public static bool TryGetDecodedSize(
@@ -62,7 +63,8 @@ public static class ImageDecoder
     /// </param>
     /// <exception cref="NotSupportedException">
     /// The bytes aren't in a format this library decodes, or the image is of a kind its format's
-    /// decoder doesn't read (see <see cref="PngCodec.Decode"/> and <see cref="JpegCodec.Decode"/>).
+    /// decoder doesn't read (see <see cref="PngCodec.Decode"/>, <see cref="JpegCodec.Decode"/> and
+    /// <see cref="WebPCodec.Decode"/>).
     /// </exception>
     /// <exception cref="InvalidDataException">The image is damaged.</exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't the image's byte count.</exception>

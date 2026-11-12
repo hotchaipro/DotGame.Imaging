@@ -30,3 +30,20 @@ jobs:
           dotnet-version: '11.0.x'
       - run: dotnet build -c Release
       - run: dotnet test -c Release --no-build
+
+  # The API reference is up to date with the doc comments, the docs' links resolve, and the README's
+  # samples compile
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '11.0.x'
+      - name: Check the API reference
+        run: dotnet run tools/api-docs/generate.cs -- --check
+      - name: Check the links and samples
+        run: python tools/api-docs/check-docs.py
