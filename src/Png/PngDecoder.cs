@@ -84,7 +84,8 @@ internal static partial class PngDecoder
     /// </summary>
     /// <exception cref="InvalidDataException">The bytes aren't a PNG image, or the image is damaged.</exception>
     /// <exception cref="NotSupportedException">
-    /// The image is larger than 8192 x 8192 pixels, or has a critical chunk this decoder doesn't know.
+    /// The image has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape), or has a
+    /// critical chunk this decoder doesn't know.
     /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't the image's byte count.</exception>
     public static void Decode(
@@ -230,7 +231,7 @@ internal static partial class PngDecoder
 
         if (checkSize && ((long)width * height > MaxPixels))
         {
-            throw new NotSupportedException($"The PNG image ({width} x {height}) is larger than 8192 x 8192 pixels.");
+            throw new NotSupportedException($"The PNG image ({width} x {height}) has more than 8192 x 8192 pixels in all.");
         }
 
         bool validDepth = colorType switch

@@ -33,6 +33,9 @@ internal sealed partial class JpegEncoder
     // The most pixels an image may have, as the decoder reads
     private const long MaxPixels = 8192L * 8192L;
 
+    // The most pixels a side may have: the frame header holds each in 16 bits
+    private const int MaxSide = 65535;
+
     // The output is written in chunks of this size; past it, the chunk goes to the writer before the
     // next MCU, which the slack has room for (an MCU's worst case is under 5 KB)
     private const int OutputChunk = 64 * 1024;
@@ -175,21 +178,23 @@ internal sealed partial class JpegEncoder
         IBufferWriter<byte> writer,
         int width,
         int height,
-        ReadOnlySpan<byte> rgba,
+        ReadOnlySpan<byte> pixels,
         JpegEncoderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(writer);
         options ??= Defaults;
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(width, MaxSide);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(height, MaxSide);
         if ((long)width * height > MaxPixels)
         {
-            throw new ArgumentOutOfRangeException(nameof(width), $"The image ({width} x {height}) is larger than 8192 x 8192 pixels.");
+            throw new ArgumentOutOfRangeException(nameof(width), $"The image ({width} x {height}) has more than 8192 x 8192 pixels in all.");
         }
 
-        if (rgba.Length != width * height * 4)
+        if (pixels.Length != width * height * 4)
         {
-            throw new ArgumentException($"A {width} x {height} image is {width * height * 4} bytes of RGBA, but {rgba.Length} were given.", nameof(rgba));
+            throw new ArgumentException($"A {width} x {height} image is {width * height * 4} bytes of RGBA, but {pixels.Length} were given.", nameof(pixels));
         }
 
         ArgumentOutOfRangeException.ThrowIfNegative(options.Quality, nameof(options));
@@ -211,7 +216,7 @@ internal sealed partial class JpegEncoder
         var encoder = new JpegEncoder(writer, width, height, options);
         try
         {
-            encoder.Run(rgba);
+            encoder.Run(pixels);
         }
         finally
         {

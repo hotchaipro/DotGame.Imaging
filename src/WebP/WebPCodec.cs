@@ -70,7 +70,9 @@ public static class WebPCodec
     /// usually take them. A WebP file stores straight alpha, so false gives the colors as stored.
     /// </param>
     /// <exception cref="InvalidDataException">The bytes aren't a WebP image, or it's damaged.</exception>
-    /// <exception cref="NotSupportedException">The image is animated, or larger than 8192 x 8192 pixels.</exception>
+    /// <exception cref="NotSupportedException">
+    /// The image is animated, or has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape).
+    /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't the image's byte count.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="layout"/> isn't a layout.</exception>
     public static void Decode(
@@ -100,8 +102,9 @@ public static class WebPCodec
     /// <param name="options">How to encode the image; null for cwebp's defaults (lossy, quality 75).</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// The width or height isn't 1 to 16383, the image is larger than 8192 x 8192 pixels, an option is
-    /// out of its range, or <paramref name="layout"/> isn't a layout.
+    /// The width or height isn't 1 to 16383 (WebP's limit), the image has more than 8192 x 8192 pixels in
+    /// all (67,108,864, whatever its shape), an option is out of its range, or <paramref name="layout"/>
+    /// isn't a layout.
     /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't width x height pixels.</exception>
     public static void Encode(
@@ -118,7 +121,7 @@ public static class WebPCodec
         int bytesPerPixel = PixelLayouts.BytesPerPixel(layout);
         if ((width < 1) || (width > 16383) || (height < 1) || (height > 16383) || (((long)width * height) > (8192L * 8192L)))
         {
-            throw new ArgumentOutOfRangeException(nameof(width), $"A WebP image is 1 to 16383 pixels on each side, and at most 8192 x 8192 pixels; this is {width} x {height}.");
+            throw new ArgumentOutOfRangeException(nameof(width), $"A WebP image is 1 to 16383 pixels on each side, and has at most 8192 x 8192 pixels in all; this is {width} x {height}.");
         }
 
         if (pixels.Length != (width * height * bytesPerPixel))
