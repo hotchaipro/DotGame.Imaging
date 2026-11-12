@@ -235,12 +235,32 @@ public sealed class JpegCodecTests
         Assert.Throws<ArgumentNullException>(() => JpegCodec.Encode(null!, 1, 1, new byte[4], PixelLayout.Rgba32, unpremultiplyAlpha: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 0, 1, [], PixelLayout.Rgba32, unpremultiplyAlpha: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 8193, 8193, [], PixelLayout.Rgba32, unpremultiplyAlpha: false));
-        Assert.Throws<ArgumentException>(() => JpegCodec.Encode(writer, 2, 2, new byte[15], PixelLayout.Rgba32, unpremultiplyAlpha: false));
+        var wrongSize = Assert.Throws<ArgumentException>(() => JpegCodec.Encode(writer, 2, 2, new byte[15], PixelLayout.Rgba32, unpremultiplyAlpha: false));
+        Assert.Equal("pixels", wrongSize.ParamName);
         Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 1, 1, new byte[4], PixelLayout.Rgba32, unpremultiplyAlpha: false, new JpegEncoderOptions { Quality = 101 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 1, 1, new byte[4], PixelLayout.Rgba32, unpremultiplyAlpha: false, new JpegEncoderOptions { RestartBlocks = 65536 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 1, 1, new byte[4], PixelLayout.Rgba32, unpremultiplyAlpha: false, new JpegEncoderOptions { Subsampling = (JpegSubsampling)3 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 1, 1, new byte[4], (PixelLayout)1, unpremultiplyAlpha: false));
         Assert.Equal(0, writer.WrittenCount);
+    }
+
+    [Fact]
+    public void Encode_RejectsASideLongerThanAJpegHolds()
+    {
+        var writer = new ArrayBufferWriter<byte>();
+
+        // The frame header holds each side in 16 bits, so a longer one would be cut short in the file
+        var wide = Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 65536, 1, new byte[65536 * 4], PixelLayout.Rgba32, unpremultiplyAlpha: false));
+        Assert.Equal("width", wide.ParamName);
+        var tall = Assert.Throws<ArgumentOutOfRangeException>(() => JpegCodec.Encode(writer, 1, 65536, new byte[65536 * 4], PixelLayout.Rgba32, unpremultiplyAlpha: false));
+        Assert.Equal("height", tall.ParamName);
+        Assert.Equal(0, writer.WrittenCount);
+
+        // The longest side it holds
+        JpegCodec.Encode(writer, 65535, 1, new byte[65535 * 4], PixelLayout.Rgba32, unpremultiplyAlpha: false);
+        Assert.True(JpegCodec.TryGetDecodedSize(writer.WrittenSpan, PixelLayout.Rgba32, out int width, out int height, out int byteCount));
+        Assert.Equal((65535, 1), (width, height));
+        JpegCodec.Decode(writer.WrittenSpan, new byte[byteCount], PixelLayout.Rgba32);
     }
 
     // EncodeSource.png's pixels (96 x 64), or its middle 37 x 21

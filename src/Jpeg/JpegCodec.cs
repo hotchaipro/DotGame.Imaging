@@ -80,7 +80,8 @@ public static class JpegCodec
     /// The image is of a kind this decoder doesn't read, which the message names: arithmetic coded,
     /// lossless or hierarchical, 12-bit samples, CMYK or YCCK, a height in a DNL marker, sampling
     /// factors libjpeg doesn't upsample, a progressive image whose scans leave its low coefficients
-    /// unrefined (which libjpeg-turbo smooths), or larger than 8192 x 8192 pixels.
+    /// unrefined (which libjpeg-turbo smooths), or an image with more than 8192 x 8192 pixels in all
+    /// (67,108,864, whatever its shape).
     /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't the image's byte count.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="layout"/> isn't a layout.</exception>
@@ -110,8 +111,9 @@ public static class JpegCodec
     /// <param name="options">How to encode the image, or null for cjpeg's defaults (quality 75, 4:2:0).</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// The width or height isn't positive, the image is larger than JPEG allows or than 8192 x 8192
-    /// pixels, an option is out of its range, or <paramref name="layout"/> isn't a layout.
+    /// The width or height isn't 1 to 65535 (JPEG's limit), the image has more than 8192 x 8192 pixels
+    /// in all (67,108,864, whatever its shape), an option is out of its range, or
+    /// <paramref name="layout"/> isn't a layout.
     /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't width x height pixels.</exception>
     public static void Encode(

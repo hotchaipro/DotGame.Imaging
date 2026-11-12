@@ -73,7 +73,8 @@ public static class PngCodec
     /// </param>
     /// <exception cref="InvalidDataException">The bytes aren't a PNG image, or it's damaged.</exception>
     /// <exception cref="NotSupportedException">
-    /// The image is larger than 8192 x 8192 pixels, or has a critical chunk this decoder doesn't know.
+    /// The image has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape), or has a
+    /// critical chunk this decoder doesn't know.
     /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't the image's byte count.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="layout"/> isn't a layout.</exception>
@@ -105,7 +106,8 @@ public static class PngCodec
     /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// The width or height isn't positive, the image is larger than 8192 x 8192 pixels, or
+    /// The width or height isn't positive, the image has more than 8192 x 8192 pixels in all
+    /// (67,108,864, whatever its shape), or
     /// <paramref name="layout"/> or <paramref name="compressionLevel"/> isn't one of its values.
     /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't width x height pixels.</exception>
@@ -124,7 +126,7 @@ public static class PngCodec
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         if ((long)width * height > PngDecoder.MaxPixels)
         {
-            throw new ArgumentOutOfRangeException(nameof(width), $"The image ({width} x {height}) is larger than 8192 x 8192 pixels.");
+            throw new ArgumentOutOfRangeException(nameof(width), $"The image ({width} x {height}) has more than 8192 x 8192 pixels in all.");
         }
 
         if (pixels.Length != width * height * bytesPerPixel)

@@ -64,7 +64,9 @@ internal static class WebPDecoder
     /// upsampling), straight alpha, or premultiplied as <see cref="PngCodec"/> does.
     /// </summary>
     /// <exception cref="InvalidDataException">The bytes aren't a WebP file, or it's damaged.</exception>
-    /// <exception cref="NotSupportedException">The image is animated, or larger than 8192 x 8192 pixels.</exception>
+    /// <exception cref="NotSupportedException">
+    /// The image is animated, or has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape).
+    /// </exception>
     /// <exception cref="ArgumentException"><paramref name="pixels"/> isn't the image's byte count.</exception>
     public static void Decode(
         ReadOnlySpan<byte> data,
@@ -85,7 +87,7 @@ internal static class WebPDecoder
 
         if ((long)file.Width * file.Height > MaxPixels)
         {
-            throw new NotSupportedException($"The WebP image ({file.Width} x {file.Height}) is larger than 8192 x 8192 pixels.");
+            throw new NotSupportedException($"The WebP image ({file.Width} x {file.Height}) has more than 8192 x 8192 pixels in all.");
         }
 
         PixelLayouts.CheckBuffer(file.Width, file.Height, bytesPerPixel, pixels.Length, nameof(pixels));

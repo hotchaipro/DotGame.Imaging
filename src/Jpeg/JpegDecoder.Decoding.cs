@@ -256,7 +256,7 @@ internal static partial class JpegDecoder
 
             if ((long)this.width * this.height > MaxPixels)
             {
-                throw new NotSupportedException($"The JPEG image ({this.width} x {this.height}) is larger than 8192 x 8192 pixels.");
+                throw new NotSupportedException($"The JPEG image ({this.width} x {this.height}) has more than 8192 x 8192 pixels in all.");
             }
 
             PixelLayouts.CheckBuffer(this.width, this.height, this.bytesPerPixel, this.outputLength, "pixels");

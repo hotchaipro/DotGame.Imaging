@@ -36,7 +36,7 @@ Decodes a JPEG image's pixels into `pixels`. A JPEG image is opaque: every pixel
 
 **Throws `InvalidDataException`:** The bytes aren't a JPEG image, or it's damaged.
 
-**Throws `NotSupportedException`:** The image is of a kind this decoder doesn't read, which the message names: arithmetic coded, lossless or hierarchical, 12-bit samples, CMYK or YCCK, a height in a DNL marker, sampling factors libjpeg doesn't upsample, a progressive image whose scans leave its low coefficients unrefined (which libjpeg-turbo smooths), or larger than 8192 x 8192 pixels.
+**Throws `NotSupportedException`:** The image is of a kind this decoder doesn't read, which the message names: arithmetic coded, lossless or hierarchical, 12-bit samples, CMYK or YCCK, a height in a DNL marker, sampling factors libjpeg doesn't upsample, a progressive image whose scans leave its low coefficients unrefined (which libjpeg-turbo smooths), or an image with more than 8192 x 8192 pixels in all (67,108,864, whatever its shape).
 
 **Throws `ArgumentException`:** `pixels` isn't the image's byte count.
 
@@ -64,7 +64,7 @@ Encodes pixels as a JPEG image and writes the file to `writer`: with the same se
 
 **Throws `ArgumentNullException`:** `writer` is null.
 
-**Throws `ArgumentOutOfRangeException`:** The width or height isn't positive, the image is larger than JPEG allows or than 8192 x 8192 pixels, an option is out of its range, or `layout` isn't a layout.
+**Throws `ArgumentOutOfRangeException`:** The width or height isn't 1 to 65535 (JPEG's limit), the image has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape), an option is out of its range, or `layout` isn't a layout.
 
 **Throws `ArgumentException`:** `pixels` isn't width x height pixels.
 

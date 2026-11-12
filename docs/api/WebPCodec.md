@@ -35,7 +35,7 @@ Decodes a WebP image's pixels into `pixels`.
 
 **Throws `InvalidDataException`:** The bytes aren't a WebP image, or it's damaged.
 
-**Throws `NotSupportedException`:** The image is animated, or larger than 8192 x 8192 pixels.
+**Throws `NotSupportedException`:** The image is animated, or has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape).
 
 **Throws `ArgumentException`:** `pixels` isn't the image's byte count.
 
@@ -63,7 +63,7 @@ Encodes pixels as a WebP image, lossy or lossless as `options` say, and writes t
 
 **Throws `ArgumentNullException`:** `writer` is null.
 
-**Throws `ArgumentOutOfRangeException`:** The width or height isn't 1 to 16383, the image is larger than 8192 x 8192 pixels, an option is out of its range, or `layout` isn't a layout.
+**Throws `ArgumentOutOfRangeException`:** The width or height isn't 1 to 16383 (WebP's limit), the image has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape), an option is out of its range, or `layout` isn't a layout.
 
 **Throws `ArgumentException`:** `pixels` isn't width x height pixels.
 

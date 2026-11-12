@@ -37,7 +37,7 @@ Decodes a PNG image's pixels into `pixels`.
 
 **Throws `InvalidDataException`:** The bytes aren't a PNG image, or it's damaged.
 
-**Throws `NotSupportedException`:** The image is larger than 8192 x 8192 pixels, or has a critical chunk this decoder doesn't know.
+**Throws `NotSupportedException`:** The image has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape), or has a critical chunk this decoder doesn't know.
 
 **Throws `ArgumentException`:** `pixels` isn't the image's byte count.
 
@@ -65,7 +65,7 @@ Encodes pixels as a PNG image, 8 bits a sample, and writes the file to `writer`.
 
 **Throws `ArgumentNullException`:** `writer` is null.
 
-**Throws `ArgumentOutOfRangeException`:** The width or height isn't positive, the image is larger than 8192 x 8192 pixels, or `layout` or `compressionLevel` isn't one of its values.
+**Throws `ArgumentOutOfRangeException`:** The width or height isn't positive, the image has more than 8192 x 8192 pixels in all (67,108,864, whatever its shape), or `layout` or `compressionLevel` isn't one of its values.
 
 **Throws `ArgumentException`:** `pixels` isn't width x height pixels.
 
