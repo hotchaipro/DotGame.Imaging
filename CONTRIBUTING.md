@@ -37,7 +37,9 @@ A few things the library holds to:
   `dotnet run tools/api-docs/generate.cs` (`-- --check` fails if `docs/api` is out of date, and
   `-- --missing` lists members with no comment). After changing `README.md` or `docs/`,
   `python3 tools/api-docs/check-docs.py` checks their links and compiles the README's samples. CI
-  runs both.
+  runs both. The other DotGame repositories' API references use copies of this `generate.cs`, each
+  with its own `tools/api-docs/packages.json`: a change to it is copied to them, whose CI fails until
+  theirs is the same.
 
 Open a pull request against `main`. By contributing, you agree that your contribution is licensed under
 the MIT License, as the rest of the library is (`LICENSE`).

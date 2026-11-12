@@ -1,0 +1,14 @@
+// What tools/api-docs/generate.cs documents in this repository: see the comment on ReadPackages there
+{
+  // The one package has its pages in docs/api itself, and links back to the docs' index
+  "writeIndex": false,
+  "allPackages": "../README.md",
+  "allPackagesText": "Documentation",
+  "packages": [
+    {
+      "name": "DotGame.Imaging",
+      "description": "PNG, JPEG and WebP image codecs, with no dependencies: a decoder and an encoder for each.",
+      "roots": ["src"]
+    }
+  ]
+}

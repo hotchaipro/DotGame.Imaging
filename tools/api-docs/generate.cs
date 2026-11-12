@@ -1,13 +1,18 @@
-// Writes the API reference under docs/api from the source: every public type and member of
-// DotGame.Imaging, with its doc comments, one page per type.
+// Writes the API reference under docs/api from the source: every public type and member of this
+// repository's packages, with its doc comments, one page per type.
 //
 //     dotnet run tools/api-docs/generate.cs                 writes docs/api
 //     dotnet run tools/api-docs/generate.cs -- --check      fails if docs/api isn't up to date
 //     dotnet run tools/api-docs/generate.cs -- --missing    lists public members with no doc comment
 //
-// It reads source rather than the built assembly, so it needs no build first. DotGame.Framework's and
-// DotGame.Toolkit's generators are copies of this one with their own packages: a fix to the shared
-// part belongs in all three.
+// It reads source rather than built assemblies, so it needs no build first and no platform's
+// workload.
+//
+// This file is the same in every DotGame repository that has an API reference; what's particular to
+// one is in tools/api-docs/packages.json beside it: its packages, where their source is, and other
+// repositories' packages it reads for links to their types, from the clones their variables name. The
+// copy in DotGame.Imaging is the original: change it there, then copy it to the others, whose CI fails
+// while theirs differs from it.
 
 #:package Microsoft.CodeAnalysis.CSharp@4.14.0
 #:property RunAnalyzers=false
@@ -20,22 +25,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-var repo = FindRepository("DotGame.Imaging.slnx");
-
-// The one package has its pages in docs/api itself
-var packages = new Package[]
-{
-    new("DotGame.Imaging", "PNG, JPEG and WebP image codecs, with no dependencies: a decoder and an encoder for each.", [Path.Combine(repo, "src")]),
-};
-
-// There's no index of packages: the package page is docs/api/README.md, and links back to the docs' index
-var layout = new Layout(WriteIndex: false, AllPackages: "../README.md", AllPackagesText: "Documentation");
+var repo = FindRepository();
+var (packages, layout) = ReadPackages(repo);
 
 bool check = args.Contains("--check");
 bool missing = args.Contains("--missing");
@@ -161,13 +159,13 @@ foreach (var (path, content) in output)
 Console.WriteLine($"Wrote {output.Count} pages to docs/api");
 return 0;
 
-static string FindRepository(
-    string marker)
+// The repository is the folder above the current one with tools/api-docs/packages.json
+static string FindRepository()
 {
     var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
     while (directory is not null)
     {
-        if (File.Exists(Path.Combine(directory.FullName, marker)))
+        if (File.Exists(Path.Combine(directory.FullName, "tools", "api-docs", "packages.json")))
         {
             return directory.FullName;
         }
@@ -175,7 +173,82 @@ static string FindRepository(
         directory = directory.Parent;
     }
 
-    throw new InvalidOperationException("Run this from inside the repository.");
+    throw new InvalidOperationException("Run this from inside a repository with tools/api-docs/packages.json.");
+}
+
+// packages.json: the packages, in the index's order, and how the pages link back to an index.
+//
+//     {
+//       "writeIndex": true,                // docs/api/README.md is an index of every package
+//       "allPackages": "../README.md",     // where a package page's link back goes
+//       "allPackagesText": "All packages", // and what it says (this by default)
+//       "packages": [
+//         // This repository's: its pages in docs/api/<folder> ("" or none for docs/api itself)
+//         { "name": "Framework", "description": "...", "roots": ["framework"], "folder": "Framework" },
+//         // Another's, read from the clone the variable names, its roots in that clone: links to its
+//         // types go to its home page, or to its pages if it has them
+//         { "name": "Imaging", "description": "...", "clone": "DotGameImagingDir", "repository": "DotGame.Imaging",
+//           "roots": ["src"], "home": "https://...", "pages": "https://..." }
+//       ]
+//     }
+//
+// Comments and trailing commas are allowed.
+static (Package[] Packages, Layout Layout) ReadPackages(
+    string repo)
+{
+    var path = Path.Combine(repo, "tools", "api-docs", "packages.json");
+    using var json = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+    var root = json.RootElement;
+
+    string? Text(JsonElement element, string name) => element.TryGetProperty(name, out var value) ? value.GetString() : null;
+    string Required(JsonElement element, string name) => Text(element, name) ?? throw new InvalidOperationException($"{path}: no \"{name}\".");
+
+    var packages = new List<Package>();
+    foreach (var entry in root.GetProperty("packages").EnumerateArray())
+    {
+        var name = Required(entry, "name");
+        var clone = Text(entry, "clone");
+        var home = Text(entry, "home");
+        if ((clone is null) != (home is null))
+        {
+            throw new InvalidOperationException($"{path}: {name} needs both \"clone\" and \"home\" (another repository's package), or neither (this one's).");
+        }
+
+        var baseFolder = (clone is null) ? repo : Clone(clone, Required(entry, "repository"));
+        var roots = entry.GetProperty("roots").EnumerateArray().Select(r => Path.Combine(baseFolder, r.GetString()!)).ToArray();
+        packages.Add(new Package(name, Required(entry, "description"), roots)
+        {
+            Folder = Text(entry, "folder") ?? string.Empty,
+            Home = home,
+            Pages = Text(entry, "pages"),
+        });
+    }
+
+    var layout = new Layout(
+        root.TryGetProperty("writeIndex", out var writeIndex) && writeIndex.GetBoolean(),
+        Required(root, "allPackages"),
+        Text(root, "allPackagesText") ?? "All packages");
+    return (packages.ToArray(), layout);
+}
+
+// Another repository's clone, where the variable says
+static string Clone(
+    string variable,
+    string name)
+{
+    var path = Environment.GetEnvironmentVariable(variable);
+    if (string.IsNullOrEmpty(path))
+    {
+        throw new InvalidOperationException($"Set {variable} to a clone of {name}.");
+    }
+
+    path = Path.GetFullPath(path);
+    if (!Directory.Exists(path))
+    {
+        throw new InvalidOperationException($"No clone of {name} at {path}: set {variable} to where it is.");
+    }
+
+    return path;
 }
 
 // A package's roots are the folders its source is in. One of this repository's has pages in its
