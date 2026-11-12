@@ -7,10 +7,10 @@
 Links: every relative link in README.md, CONTRIBUTING.md and docs/, its file and its #anchor, must
 resolve. Links to other repositories are absolute (https://github.com/...), and aren't checked.
 
-Code: every ```csharp block in README.md goes into a throwaway project and is compiled against the
-library (src/DotGame.Imaging.csproj). A block holding whole types is compiled as it is. One with
-members is wrapped in a class, and one with statements in a method. Each gets the fields of Prelude,
-below, as the names the samples share. A <!-- no-check --> line before a block skips it, for a
+Code: every ```csharp block in README.md and docs/guide.md goes into a throwaway project and is
+compiled against the library (src/DotGame.Imaging.csproj). A block holding whole types is compiled as
+it is. One with members is wrapped in a class, and one with statements in a method. Each gets the
+fields of Prelude, below, as the names the samples share. A <!-- no-check --> line before a block skips it, for a
 fragment that can't compile on its own.
 
 DotGame.Framework's and DotGame.Toolkit's tools/api-docs/check-guides.py do the same for their guides.
@@ -25,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
-SAMPLES = [ROOT / "README.md"]
+SAMPLES = [ROOT / "README.md", DOCS / "guide.md"]
 # Outside the repository, so its code style rules don't apply to fragments
 WORK = Path(tempfile.gettempdir()).resolve() / "dotgame-imaging-doc-samples"
 

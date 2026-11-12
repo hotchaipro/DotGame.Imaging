@@ -19,62 +19,10 @@ dotnet add package DotGame.Imaging
 
 ## Using it
 
-Decoding is two calls: get the size, then decode into a buffer of that size, so decoding allocates
-nothing for the pixels. `ImageDecoder` tells the format from the bytes; `PngCodec`, `JpegCodec` and
-`WebPCodec` (in `DotGame.Imaging.Png`, `.Jpeg` and `.WebP`) decode one format each.
-
-```csharp
-using DotGame.Imaging;
-
-byte[] file = File.ReadAllBytes("image.webp");
-if (ImageDecoder.TryGetDecodedSize(file, PixelLayout.Rgba32, out int width, out int height, out int byteCount))
-{
-    byte[] pixels = new byte[byteCount];
-    ImageDecoder.Decode(file, pixels, PixelLayout.Rgba32, premultiplyAlpha: false);
-}
-```
-
-Encoding a PNG, to any `IBufferWriter<byte>`. A `PngCompressionLevel` trades size for speed:
-`Optimal`, the default, for files that are kept, or `Fastest` and `NoCompression` for files read
-again straight away:
-
-```csharp
-using System.Buffers;
-using DotGame.Imaging;
-using DotGame.Imaging.Png;
-
-var png = new ArrayBufferWriter<byte>();
-PngCodec.Encode(png, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false);
-File.WriteAllBytes("image.png", png.WrittenSpan);
-```
-
-Encoding a WebP: with the same settings, the file is byte for byte what cwebp 1.6.0 writes (here,
-`cwebp -q 80 -m 6 -exact`; `Lossless = true` is `-lossless`):
-
-```csharp
-using System.Buffers;
-using DotGame.Imaging;
-using DotGame.Imaging.WebP;
-
-var webp = new ArrayBufferWriter<byte>();
-WebPCodec.Encode(webp, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false,
-    new WebPEncoderOptions { Quality = 80, Method = 6, Exact = true });
-File.WriteAllBytes("image.webp", webp.WrittenSpan);
-```
-
-Encoding a JPEG: with the same settings, the file is byte for byte what cjpeg 3.2.1 writes (here,
-`cjpeg -quality 90 -sample 1x1 -optimize`; `Progressive = true` is `-progressive`):
-
-```csharp
-using System.Buffers;
-using DotGame.Imaging;
-using DotGame.Imaging.Jpeg;
-
-var jpeg = new ArrayBufferWriter<byte>();
-JpegCodec.Encode(jpeg, width, height, pixels, PixelLayout.Rgba32, unpremultiplyAlpha: false,
-    new JpegEncoderOptions { Quality = 90, Subsampling = JpegSubsampling.YCbCr444, OptimizeHuffman = true });
-File.WriteAllBytes("image.jpg", jpeg.WrittenSpan);
-```
+The [guide](https://github.com/hotchaipro/DotGame.Imaging/blob/main/docs/guide.md) shows how to
+decode and encode an image, and the
+[API reference](https://github.com/hotchaipro/DotGame.Imaging/blob/main/docs/README.md) has a page
+for every public type and member, with every option the encoders take.
 
 ## Performance
 

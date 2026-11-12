@@ -31,8 +31,8 @@ jobs:
       - run: dotnet build -c Release
       - run: dotnet test -c Release --no-build
 
-  # The API reference is up to date with the doc comments, the docs' links resolve, and the README's
-  # samples compile
+  # The API reference is up to date with the doc comments, the docs' links resolve, and the samples in
+  # the README and the guide compile
   docs:
     runs-on: ubuntu-latest
     steps:

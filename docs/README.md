@@ -1,8 +1,13 @@
 # DotGame.Imaging documentation
 
 DotGame.Imaging is a set of PNG, JPEG and WebP image codecs for .NET 11, with no dependencies: a
-decoder and an encoder for each. The [README](../README.md) shows how to install it, how to decode and
-encode an image, and how fast it is.
+decoder and an encoder for each. The [README](../README.md) shows how to install it and how fast it
+is.
+
+## Guide
+
+[Using DotGame.Imaging](guide.md) shows how to decode and encode an image: the size first, then the
+pixels, and each encoder's options.
 
 ## API reference
 
