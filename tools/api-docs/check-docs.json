@@ -1,0 +1,19 @@
+// What tools/api-docs/check-docs.cs checks in this repository: see the comment on Config there
+{
+  "links": ["README.md", "CONTRIBUTING.md", "docs/**/*.md"],
+  "samples": ["README.md", "docs/guide.md"],
+  "workFolder": "dotgame-imaging-doc-samples",
+  "usings": [
+    "System",
+    "System.Buffers",
+    "System.Collections.Generic",
+    "System.IO",
+    "System.Threading.Tasks",
+    "DotGame.Imaging",
+    "DotGame.Imaging.Jpeg",
+    "DotGame.Imaging.Png",
+    "DotGame.Imaging.WebP"
+  ],
+  "prelude": "check-docs.prelude.cs",
+  "references": ["src/DotGame.Imaging.csproj"]
+}

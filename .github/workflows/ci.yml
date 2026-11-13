@@ -37,13 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '11.0.x'
       - name: Check the API reference
         run: dotnet run tools/api-docs/generate.cs -- --check
       - name: Check the links and samples
-        run: python tools/api-docs/check-docs.py
+        run: dotnet run tools/api-docs/check-docs.cs
