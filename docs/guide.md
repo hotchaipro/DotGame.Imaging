@@ -23,6 +23,14 @@ if (ImageDecoder.TryGetDecodedSize(file, PixelLayout.Rgba32, out int width, out 
 }
 ```
 
+A damaged image throws `InvalidDataException`. A valid image of a kind its decoder doesn't read
+throws `NotSupportedException`, saying why: an animated WebP, or an arithmetic-coded, lossless or
+CMYK JPEG, for example. Each codec's `Decode` lists what it reads.
+
+Image files store straight alpha. `premultiplyAlpha: true` multiplies each pixel's red, green and blue
+by its alpha, as GPU textures usually take them. Going the other way, pixels read back from a GPU are
+usually premultiplied, and `unpremultiplyAlpha: true` divides the alpha out when they're encoded.
+
 ## Encoding
 
 Each codec's `Encode` writes the file to any `IBufferWriter<byte>`.
