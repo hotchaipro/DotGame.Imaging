@@ -16,8 +16,8 @@
 // on its own.
 //
 // This file is the same in every DotGame repository that has docs to check; what's particular to one
-// is in tools/api-docs/check-docs.json beside it. The copy in DotGame.Imaging is the original: change
-// it there, then copy it to the others, whose CI fails while theirs differs from it.
+// is in tools/api-docs/check-docs.json beside it. Each repository keeps its own copy, so an improvement
+// to one is worth copying to the others.
 
 #:property RunAnalyzers=false
 #:property TreatWarningsAsErrors=false

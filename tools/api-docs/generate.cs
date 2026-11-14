@@ -10,9 +10,8 @@
 //
 // This file is the same in every DotGame repository that has an API reference; what's particular to
 // one is in tools/api-docs/packages.json beside it: its packages, where their source is, and other
-// repositories' packages it reads for links to their types, from the clones their variables name. The
-// copy in DotGame.Imaging is the original: change it there, then copy it to the others, whose CI fails
-// while theirs differs from it.
+// repositories' packages it reads for links to their types, from the clones their variables name. Each
+// repository keeps its own copy, so an improvement to one is worth copying to the others.
 
 #:package Microsoft.CodeAnalysis.CSharp@4.14.0
 #:property RunAnalyzers=false
