@@ -8,7 +8,8 @@ name: Publish
 # After the push, it makes a draft GitHub release for the version, tagged vVERSION at the commit it
 # published (an existing tag is kept), and a prerelease if the version has a suffix. Write its notes and
 # publish it by hand: the tag is made when the draft is published. Untick "Set as the latest release"
-# for anything but the newest stable version, such as a fix release for an older major version.
+# for anything but the newest stable version, such as a fix release for an older major version. If
+# main has changed a workflow since the run's commit, the run can't draft it, and its summary says how.
 
 on:
   workflow_dispatch:
@@ -60,10 +61,41 @@ jobs:
 
           NuGet: https://www.nuget.org/packages/DotGame.Imaging/$VERSION
           EOF
+          TITLE="DotGame.Imaging $VERSION"
           create() {
             gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
-              --title "DotGame.Imaging $VERSION" --notes-file notes.md
+              --title "$TITLE" --notes-file notes.md
           }
+          # What to run instead, from a clone, as someone who can push workflows: in the run's summary
+          by_hand() {
+            echo "::warning::$1 The packages are pushed: draft the release by hand, as the run's summary says."
+            {
+              echo "### Draft the GitHub release by hand"
+              echo
+              echo "$1 From a clone, with the notes below in notes.md:"
+              echo
+              echo '```bash'
+              echo "gh release create $TAG --draft $PRERELEASE --target $GITHUB_SHA --title \"$TITLE\" --notes-file notes.md"
+              echo '```'
+              echo
+              echo '~~~~markdown'
+              cat notes.md
+              echo '~~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
+          # The workflow token can't make a ref whose workflow files differ from the default branch's: that
+          # takes the workflows permission, which no GITHUB_TOKEN has. Once a pull request that changes a
+          # workflow is merged after the run's commit (while the run tests, say), GitHub refuses the draft,
+          # whose tag would be such a ref, with HTTP 403 "Resource not accessible by integration".
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          changed=$(gh api "repos/$GITHUB_REPOSITORY/compare/$GITHUB_SHA...$DEFAULT_BRANCH" \
+            --jq '[.files[]?.filename | select(startswith(".github/workflows/"))] | join(", ")') || changed=""
+          if [ -n "$changed" ]; then
+            by_hand "$DEFAULT_BRANCH has changed $changed since $GITHUB_SHA, so the workflow token can't draft a release there."
+            exit 0
+          fi
           create && exit 0
           # Once more with the GitHub API exchange shown (gh hides the token), so a failure says why
-          GH_DEBUG=api create
+          GH_DEBUG=api create && exit 0
+          by_hand "The workflow token couldn't draft the release: the log says why."
+          exit 1
