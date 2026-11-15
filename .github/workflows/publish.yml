@@ -60,5 +60,10 @@ jobs:
 
           NuGet: https://www.nuget.org/packages/DotGame.Imaging/$VERSION
           EOF
-          gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
-            --title "DotGame.Imaging $VERSION" --notes-file notes.md
+          create() {
+            gh release create "$TAG" --draft $PRERELEASE --target "$GITHUB_SHA" \
+              --title "DotGame.Imaging $VERSION" --notes-file notes.md
+          }
+          create && exit 0
+          # Once more with the GitHub API exchange shown (gh hides the token), so a failure says why
+          GH_DEBUG=api create
